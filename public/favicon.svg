@@ -1,0 +1,21 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="16" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14B8A6"/>
+      <stop offset="100%" stop-color="#0891B2"/>
+    </linearGradient>
+  </defs>
+  <!-- Footprint icon -->
+  <path d="M24 20C24 18.8954 24.8954 18 26 18C27.1046 18 28 18.8954 28 20V22C28 23.1046 27.1046 24 26 24C24.8954 24 24 23.1046 24 22V20Z" fill="white"/>
+  <path d="M20 24C20 22.8954 20.8954 22 22 22C23.1046 22 24 22.8954 24 24V26C24 27.1046 23.1046 28 22 28C20.8954 28 20 27.1046 20 26V24Z" fill="white"/>
+  <path d="M28 24C28 22.8954 28.8954 22 30 22C31.1046 22 32 22.8954 32 24V26C32 27.1046 31.1046 28 30 28C28.8954 28 28 27.1046 28 26V24Z" fill="white"/>
+  <path d="M24 28C24 26.8954 24.8954 26 26 26C27.1046 26 28 26.8954 28 28V30C28 31.1046 27.1046 32 26 32C24.8954 32 24 31.1046 24 30V28Z" fill="white"/>
+  <ellipse cx="26" cy="36" rx="4" ry="6" fill="white"/>
+  <path d="M38 26C38 24.8954 38.8954 24 40 24C41.1046 24 42 24.8954 42 26V28C42 29.1046 41.1046 30 40 30C38.8954 30 38 29.1046 38 28V26Z" fill="white" opacity="0.8"/>
+  <path d="M34 30C34 28.8954 34.8954 28 36 28C37.1046 28 38 28.8954 38 30V32C38 33.1046 37.1046 34 36 34C34.8954 34 34 33.1046 34 32V30Z" fill="white" opacity="0.8"/>
+  <path d="M42 30C42 28.8954 42.8954 28 44 28C45.1046 28 46 28.8954 46 30V32C46 33.1046 45.1046 34 44 34C42.8954 34 42 33.1046 42 32V30Z" fill="white" opacity="0.8"/>
+  <path d="M38 34C38 32.8954 38.8954 32 40 32C41.1046 32 42 32.8954 42 34V36C42 37.1046 41.1046 38 40 38C38.8954 38 38 37.1046 38 36V34Z" fill="white" opacity="0.8"/>
+  <ellipse cx="40" cy="42" rx="4" ry="6" fill="white" opacity="0.8"/>
+</svg>
+

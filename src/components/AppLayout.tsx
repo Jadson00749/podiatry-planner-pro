@@ -137,10 +137,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
-        <div className="p-4 lg:p-8">
+      <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen flex flex-col">
+        <div className="flex-1 p-4 lg:p-8">
           {children}
         </div>
+        
+        {/* Footer */}
+        <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
+          <div className="p-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              Desenvolvido com 💙 por{' '}
+              <span className="font-semibold text-foreground">Jadson Santos</span>
+              {' '}&copy; {new Date().getFullYear()}
+            </p>
+          </div>
+        </footer>
       </main>
     </div>
   );

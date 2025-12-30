@@ -1,73 +1,125 @@
-# Welcome to your Lovable project
+# 🦶 PodoAgenda
 
-## Project info
+Sistema completo de gestão para clínicas de podologia, desenvolvido com as tecnologias mais modernas do mercado.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![React](https://img.shields.io/badge/React-18.x-61DAFB?style=flat&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-38B2AC?style=flat&logo=tailwind-css)
+![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?style=flat&logo=supabase)
 
-## How can I edit this code?
+## 📋 Sobre o Projeto
 
-There are several ways of editing your application.
+**PodoAgenda** é uma solução profissional para gestão de clínicas de podologia, oferecendo controle completo sobre agendamentos, clientes, procedimentos e finanças. O sistema foi desenvolvido com foco em usabilidade, performance e segurança.
 
-**Use Lovable**
+## ✨ Funcionalidades
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 🔐 Autenticação e Segurança
+- Sistema de autenticação completo com Supabase
+- Rotas protegidas e controle de acesso
+- Row Level Security (RLS) no banco de dados
 
-Changes made via Lovable will be committed automatically to this repo.
+### 📅 Gestão de Agendamentos
+- Agenda inteligente com visualizações diária, semanal e mensal
+- Formulário de agendamento com validações
+- Status de agendamento (agendado, concluído, cancelado, não compareceu)
+- Mini calendário interativo
 
-**Use your preferred IDE**
+### 👥 Gestão de Clientes
+- CRUD completo de clientes
+- Histórico de atendimentos
+- Dados de contato (telefone, WhatsApp, email)
+- Busca e filtros avançados
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 💰 Controle Financeiro
+- Gestão de pagamentos (pendente, pago, parcial)
+- Controle de valores por procedimento
+- Dashboard com estatísticas financeiras
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 📱 Integração WhatsApp
+- Funções para envio de lembretes formatados
+- Mensagens de confirmação de agendamento
+- Formatação automática para números brasileiros
 
-Follow these steps:
+### 🎨 Interface Moderna
+- Design responsivo e intuitivo
+- Tema claro/escuro com persistência
+- Componentes reutilizáveis com shadcn/ui
+- Animações suaves e feedback visual
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Tecnologias
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Estilização**: TailwindCSS + shadcn/ui
+- **Backend**: Supabase (PostgreSQL + Auth)
+- **Gerenciamento de Estado**: React Query + Context API
+- **Roteamento**: React Router v6
+- **Validação**: Zod + React Hook Form
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📦 Instalação
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+# Clone o repositório
+git clone https://github.com/Jadson00749/podiatry-planner-app.git
+
+# Entre no diretório
+cd podiatry-planner-app
+
+# Instale as dependências
+npm install
+
+# Configure as variáveis de ambiente
+# Copie o arquivo .env.example para .env e configure suas credenciais do Supabase
+
+# Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🔧 Configuração
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Crie uma conta no [Supabase](https://supabase.com)
+2. Crie um novo projeto
+3. Execute as migrations do banco de dados (localizado em `/supabase/migrations`)
+4. Configure as variáveis de ambiente no arquivo `.env`:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📱 Scripts Disponíveis
 
-## What technologies are used for this project?
+```bash
+npm run dev          # Inicia o servidor de desenvolvimento
+npm run build        # Gera a build de produção
+npm run preview      # Preview da build de produção
+npm run lint         # Executa o linter
+```
 
-This project is built with:
+## 🗄️ Estrutura do Banco de Dados
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **profiles**: Perfis de usuários profissionais
+- **clients**: Cadastro de clientes
+- **procedures**: Procedimentos disponíveis
+- **appointments**: Agendamentos realizados
 
-## How can I deploy this project?
+## 🤝 Contribuindo
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Contribuições são sempre bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests.
 
-## Can I connect a custom domain to my Lovable project?
+## 📄 Licença
 
-Yes, you can!
+Este projeto está sob a licença MIT.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 👨‍💻 Autor
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+**Jadson Santos**
+
+Desenvolvedor Full Stack especializado em soluções modernas e escaláveis.
+
+- GitHub: [@Jadson00749](https://github.com/Jadson00749)
+- Email: santosjadson797@hotmail.com
+
+---
+
+Desenvolvido com 💙 por Jadson Santos © 2024
