@@ -14,4 +14,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  publicDir: "public",
+  build: {
+    outDir: "dist",
+    // Garante que arquivos estáticos sejam copiados
+    copyPublicDir: true,
+  },
 });
