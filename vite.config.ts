@@ -4,6 +4,7 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/',  // ← ADICIONE ESTA LINHA
   server: {
     host: "::",
     port: 8080,
@@ -17,7 +18,6 @@ export default defineConfig({
   publicDir: "public",
   build: {
     outDir: "dist",
-    // Garante que arquivos estáticos sejam copiados
     copyPublicDir: true,
   },
 });
