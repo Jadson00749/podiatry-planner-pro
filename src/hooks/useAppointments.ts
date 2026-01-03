@@ -103,6 +103,8 @@ export function useUpdateAppointment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['today-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['month-stats'] });
     },
   });
 }
@@ -194,5 +196,64 @@ export function useMonthStats(month?: number, year?: number) {
       return { total, completed, cancelled, totalReceived, totalPending };
     },
     enabled: !!profile?.id,
+  });
+}
+
+export function usePeriodStats(startDate: string, endDate: string) {
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['period-stats', profile?.id, startDate, endDate],
+    queryFn: async () => {
+      if (!profile?.id) return null;
+      
+      const { data: appointments, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('profile_id', profile.id)
+        .gte('appointment_date', startDate)
+        .lte('appointment_date', endDate);
+
+      if (error) throw error;
+
+      const total = appointments?.length || 0;
+      const completed = appointments?.filter(a => a.status === 'completed').length || 0;
+      const cancelled = appointments?.filter(a => a.status === 'cancelled').length || 0;
+      const totalReceived = appointments
+        ?.filter(a => a.payment_status === 'paid')
+        .reduce((sum, a) => sum + Number(a.price), 0) || 0;
+      const totalPending = appointments
+        ?.filter(a => a.payment_status === 'pending')
+        .reduce((sum, a) => sum + Number(a.price), 0) || 0;
+
+      return { total, completed, cancelled, totalReceived, totalPending };
+    },
+    enabled: !!profile?.id && !!startDate && !!endDate,
+  });
+}
+
+export function useClientAppointments(clientId: string) {
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['client-appointments', profile?.id, clientId],
+    queryFn: async () => {
+      if (!profile?.id || !clientId) return [];
+      
+      const { data: appointments, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          procedures (id, name)
+        `)
+        .eq('profile_id', profile.id)
+        .eq('client_id', clientId)
+        .order('appointment_date', { ascending: false })
+        .order('appointment_time', { ascending: false });
+
+      if (error) throw error;
+      return appointments as Appointment[];
+    },
+    enabled: !!profile?.id && !!clientId,
   });
 }
