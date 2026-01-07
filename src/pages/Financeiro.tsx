@@ -5,11 +5,12 @@ import { DollarSign, TrendingUp, Clock, CheckCircle, TrendingDown, ArrowUpRight,
 import { AppLayout } from '@/components/AppLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useAppointments, useMonthStats, usePeriodStats, useUpdateAppointment } from '@/hooks/useAppointments';
+import { useProcedures } from '@/hooks/useProcedures';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -17,6 +18,7 @@ type PeriodOption = 'current-month' | 'last-month' | 'last-3-months' | 'last-6-m
 
 export default function Financeiro() {
   const { data: appointments } = useAppointments();
+  const { data: procedures } = useProcedures();
   const { theme } = useTheme();
   const currentDate = new Date();
   const [periodOption, setPeriodOption] = useState<PeriodOption>('current-month');
@@ -190,7 +192,7 @@ export default function Financeiro() {
     }
   }, [periodOption, customStartDate, customEndDate, currentDate]);
 
-  // Dados para o gráfico (agrupado por mês)
+  // Dados para o gráfico (agrupado por mês e procedimento)
   const chartData = useMemo(() => {
     if (!appointments || appointments.length === 0) return [];
 
@@ -203,42 +205,95 @@ export default function Financeiro() {
         end: endOfMonth(endDate),
       });
 
-      // Agrupar appointments por mês
+      // Agrupar appointments por mês e procedimento
       const data = months.map((month) => {
         const monthStart = startOfMonth(month);
         const monthEnd = endOfMonth(month);
         const monthStartStr = format(monthStart, 'yyyy-MM-dd');
         const monthEndStr = format(monthEnd, 'yyyy-MM-dd');
 
-        // Filtrar appointments do mês
+        // Filtrar appointments do mês (apenas pagos)
         const monthAppointments = appointments.filter((apt) => {
           if (!apt.appointment_date) return false;
           const aptDate = apt.appointment_date;
-          return aptDate >= monthStartStr && aptDate <= monthEndStr;
+          return aptDate >= monthStartStr && aptDate <= monthEndStr && apt.payment_status === 'paid';
         });
 
-        // Calcular faturamento do mês (apenas pagos)
-        const faturamento = monthAppointments
-          .filter((apt) => apt.payment_status === 'paid')
-          .reduce((sum, apt) => {
-            const price = Number(apt.price) || 0;
-            return sum + price;
-          }, 0);
+        // Objeto para armazenar faturamento por procedimento
+        const faturamentoPorProcedimento: Record<string, number> = {};
+        let faturamentoSemProcedimento = 0;
 
-        return {
+        // Calcular faturamento por procedimento
+        monthAppointments.forEach((apt) => {
+          const price = Number(apt.price) || 0;
+          const procedureId = apt.procedure_id;
+          
+          if (procedureId) {
+            const procedureName = apt.procedures?.name || `Procedimento ${procedureId}`;
+            faturamentoPorProcedimento[procedureName] = (faturamentoPorProcedimento[procedureName] || 0) + price;
+          } else {
+            faturamentoSemProcedimento += price;
+          }
+        });
+
+        // Criar objeto com dados do mês
+        const monthData: Record<string, any> = {
           mes: format(month, 'MMM', { locale: ptBR }),
           mesCompleto: format(month, 'MMMM yyyy', { locale: ptBR }),
-          faturamento: Math.round(faturamento * 100) / 100, // Arredondar para 2 casas decimais
         };
+
+        // Adicionar faturamento por procedimento
+        Object.keys(faturamentoPorProcedimento).forEach((procedureName) => {
+          monthData[procedureName] = Math.round(faturamentoPorProcedimento[procedureName] * 100) / 100;
+        });
+
+        // Adicionar faturamento sem procedimento
+        if (faturamentoSemProcedimento > 0) {
+          monthData['Sem procedimento'] = Math.round(faturamentoSemProcedimento * 100) / 100;
+        }
+
+        // Calcular total do mês (sempre incluir, mesmo se for 0)
+        const totalMes = Object.values(faturamentoPorProcedimento).reduce((sum, val) => sum + val, 0) + faturamentoSemProcedimento;
+        monthData['total'] = Math.round(totalMes * 100) / 100;
+
+        return monthData;
       });
 
-      // Filtrar apenas meses que têm dados (opcional - pode remover se quiser mostrar todos os meses)
       return data;
     } catch (error) {
       console.error('Erro ao processar dados do gráfico:', error);
       return [];
     }
   }, [appointments, periodDates]);
+
+  // Obter todos os procedimentos únicos que aparecem nos dados
+  const uniqueProcedures = useMemo(() => {
+    const proceduresSet = new Set<string>();
+    chartData.forEach((month) => {
+      Object.keys(month).forEach((key) => {
+        if (key !== 'mes' && key !== 'mesCompleto' && key !== 'total') {
+          proceduresSet.add(key);
+        }
+      });
+    });
+    return Array.from(proceduresSet);
+  }, [chartData]);
+
+  // Cores para os procedimentos (paleta cinza e azul)
+  const procedureColors = [
+    'hsl(174, 50%, 45%)',  // Teal (cor primária do sistema)
+    'hsl(200, 45%, 48%)',  // Azul ciano
+    'hsl(210, 40%, 50%)',  // Azul claro
+    'hsl(220, 45%, 48%)',  // Azul médio
+    'hsl(230, 40%, 46%)',  // Azul acinzentado
+    'hsl(240, 45%, 48%)',  // Azul índigo
+    'hsl(200, 30%, 52%)',  // Azul muito claro
+    'hsl(210, 35%, 50%)',  // Azul acinzentado claro
+    'hsl(220, 30%, 54%)',  // Azul acinzentado médio
+    'hsl(190, 40%, 46%)',  // Azul esverdeado
+    'hsl(180, 35%, 48%)',  // Ciano acinzentado
+    'hsl(195, 30%, 50%)',  // Azul acinzentado claro
+  ];
 
 
   return (
@@ -410,15 +465,15 @@ export default function Financeiro() {
           </div>
         </div>
 
-        {/* Gráfico de Faturamento Mensal */}
-        {chartData.length > 0 && (
+        {/* Gráfico de Faturamento Mensal por Procedimento */}
+        {chartData.length > 0 && uniqueProcedures.length > 0 && (
           <div className="rounded-xl bg-card border border-border p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Faturamento Mensal</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Faturamento Mensal por Procedimento</h2>
             <div className="h-[300px] w-full [&_.recharts-surface]:bg-transparent [&_.recharts-tooltip-cursor]:transition-all [&_.recharts-tooltip-cursor]:duration-200 [&_.recharts-tooltip-cursor]:ease-in-out">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={chartData} 
-                  margin={{ top: 5, right: 10, left: 0, bottom: 5 }} 
+                  margin={{ top: 30, right: 10, left: 0, bottom: 5 }} 
                   barCategoryGap="20%"
                 >
                   <CartesianGrid 
@@ -446,21 +501,69 @@ export default function Financeiro() {
                       borderRadius: '8px',
                       padding: '8px',
                     }}
-                    formatter={(value: number) => [
+                    formatter={(value: number, name: string) => [
                       `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                      'Faturamento'
+                      name
                     ]}
                     labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
                   />
-                  <Bar 
-                    dataKey="faturamento" 
-                    fill="hsl(174, 35%, 65%)" 
-                    radius={[4, 4, 0, 0]}
-                    barSize={60}
-                  />
+                  {uniqueProcedures.map((procedureName, index) => {
+                    const fillColor = procedureColors[index % procedureColors.length];
+                    const isLastBar = index === uniqueProcedures.length - 1;
+                    
+                    return (
+                      <Bar
+                        key={procedureName}
+                        dataKey={procedureName}
+                        stackId="faturamento"
+                        fill={fillColor}
+                        radius={isLastBar ? [4, 4, 0, 0] : 0}
+                        barSize={60}
+                      >
+                        {isLastBar && (
+                          <LabelList
+                            dataKey="total"
+                            position="top"
+                            offset={5}
+                            formatter={(value: number) => {
+                              if (value === null || value === undefined || isNaN(value) || value === 0) return '';
+                              return `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                            }}
+                            style={{ 
+                              fill: 'hsl(var(--foreground))', 
+                              fontSize: 13, 
+                              fontWeight: 700,
+                              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                            }}
+                          />
+                        )}
+                      </Bar>
+                    );
+                  })}
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            {/* Legenda */}
+            {uniqueProcedures.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-sm font-medium text-foreground mb-2">Legenda:</p>
+                <div className="flex flex-wrap gap-3">
+                  {uniqueProcedures.map((procedureName, index) => {
+                    const backgroundColor = procedureColors[index % procedureColors.length];
+                    
+                    return (
+                      <div key={procedureName} className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: backgroundColor }}
+                        />
+                        <span className="text-xs text-muted-foreground">{procedureName}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

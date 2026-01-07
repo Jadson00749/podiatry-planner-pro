@@ -44,7 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    // Usa variável de ambiente se disponível, senão usa a URL de produção
+    const productionUrl = import.meta.env.VITE_SITE_URL || 'https://mediumturquoise-jackal-808195.hostingersite.com';
+    const redirectUrl = `${productionUrl}/auth`;
     
     const { error } = await supabase.auth.signUp({
       email,

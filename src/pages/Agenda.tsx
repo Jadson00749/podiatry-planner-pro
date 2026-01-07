@@ -1,19 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { format, addDays, addMonths, startOfWeek, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, addDays, addMonths, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, isWithinInterval, isSameMonth, isPast, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, X } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { AppointmentCard } from '@/components/dashboard/AppointmentCard';
 import { useAppointments, useUpdateAppointment } from '@/hooks/useAppointments';
-import { isHoliday } from '@/lib/holidays';
+import { isHoliday, getHolidaysForMonth } from '@/lib/holidays';
+import { isHolidayDate } from '@/lib/calendar';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { NewAppointmentForm } from '@/components/agenda/NewAppointmentForm';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
 
 type ViewMode = 'day' | 'week' | 'month';
 type StatusFilter = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
@@ -26,6 +28,20 @@ export default function Agenda() {
   const [selectedDate, setSelectedDate] = useState(dateParam ? parseISO(dateParam) : new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate);
+
+  // Atualizar currentMonth quando selectedDate mudar
+  useEffect(() => {
+    setCurrentMonth(selectedDate);
+  }, [selectedDate]);
+
+  // Quando o calendário abrir, garantir que mostra o mês da data selecionada
+  useEffect(() => {
+    if (isCalendarOpen) {
+      setCurrentMonth(selectedDate);
+    }
+  }, [isCalendarOpen, selectedDate]);
   
   // Filtros de status
   const [statusFilters, setStatusFilters] = useState<StatusFilter[]>([]);
@@ -67,6 +83,18 @@ export default function Agenda() {
     return eachDayOfInterval({ start, end: addDays(start, 6) });
   }, [selectedDate]);
 
+  const monthDays = useMemo(() => {
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    
+    // Começar da semana que contém o primeiro dia do mês
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    // Terminar na semana que contém o último dia do mês
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+    
+    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  }, [selectedDate]);
+
   const filteredAppointments = useMemo(() => {
     if (!appointments) return [];
     
@@ -103,7 +131,8 @@ export default function Agenda() {
     return filtered;
   }, [appointments, selectedDate, viewMode, weekDays, statusFilters, paymentFilters]);
 
-  const holiday = isHoliday(format(selectedDate, 'yyyy-MM-dd'));
+  // Verificar se a data selecionada é passada (apenas o dia, não a hora)
+  const isPastDate = isPast(startOfDay(selectedDate)) && !isSameDay(selectedDate, new Date());
 
   const handleStatusChange = (id: string, status: 'completed' | 'cancelled' | 'scheduled' | 'no_show') => {
     updateAppointment.mutate({ id, status });
@@ -151,7 +180,11 @@ export default function Agenda() {
           
           <Dialog open={isNewAppointmentOpen} onOpenChange={setIsNewAppointmentOpen}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary">
+              <Button 
+                className={cn("gradient-primary", isPastDate && "cursor-not-allowed disabled:cursor-not-allowed")}
+                disabled={isPastDate}
+                title={isPastDate ? "Não é possível criar agendamentos em datas passadas" : ""}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Agendamento
               </Button>
@@ -177,16 +210,68 @@ export default function Agenda() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
-              <div className="text-center min-w-[200px]">
-                <h2 className="font-semibold text-foreground capitalize">
-                  {viewMode === 'day' && format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
-                  {viewMode === 'week' && `Semana de ${format(weekDays[0], 'd MMM', { locale: ptBR })} - ${format(weekDays[6], 'd MMM', { locale: ptBR })}`}
-                  {viewMode === 'month' && format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
-                </h2>
-                {holiday && (
-                  <p className="text-xs text-destructive font-medium">{holiday.name}</p>
-                )}
-              </div>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "text-center min-w-[200px] h-auto py-2 px-4 font-semibold hover:bg-accent"
+                    )}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      <span className="font-semibold text-foreground capitalize">
+                        {viewMode === 'day' && format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                        {viewMode === 'week' && `Semana de ${format(weekDays[0], 'd MMM', { locale: ptBR })} - ${format(weekDays[6], 'd MMM', { locale: ptBR })}`}
+                        {viewMode === 'month' && format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+                      </span>
+                    </div>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-3">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      month={currentMonth}
+                      onSelect={(date) => {
+                        if (date) {
+                          handleDateChange(date);
+                          setIsCalendarOpen(false);
+                        }
+                      }}
+                      locale={ptBR}
+                      modifiers={{
+                        holiday: isHolidayDate,
+                      }}
+                      modifiersClassNames={{
+                        holiday: 'border border-red-500 rounded-md',
+                      }}
+                      onMonthChange={setCurrentMonth}
+                    />
+                    
+                    {/* Feriados do mês */}
+                    {(() => {
+                      const holidays = getHolidaysForMonth(currentMonth.getFullYear(), currentMonth.getMonth());
+                      return holidays.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-border">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Feriados do mês:</p>
+                          <div className="space-y-1">
+                            {holidays.map((h) => (
+                              <div key={h.date} className="flex items-center gap-2 text-xs">
+                                <span className="text-destructive font-medium">
+                                  {format(new Date(h.date + 'T00:00:00'), 'd')}
+                                </span>
+                                <span className="text-muted-foreground">{h.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </PopoverContent>
+              </Popover>
               
               <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
                 <ChevronRight className="h-4 w-4" />
@@ -369,11 +454,13 @@ export default function Agenda() {
                 <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                 <h3 className="font-medium text-foreground mb-1">Nenhum agendamento</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Não há consultas marcadas para este dia
+                  {isPastDate ? "Não houve consultas marcadas para este dia" : "Não há consultas marcadas para este dia"}
                 </p>
-                <Button onClick={() => setIsNewAppointmentOpen(true)}>
-                  Criar agendamento
-                </Button>
+                {!isPastDate && (
+                  <Button onClick={() => setIsNewAppointmentOpen(true)}>
+                    Criar agendamento
+                  </Button>
+                )}
               </div>
             ) : (
               filteredAppointments
@@ -391,19 +478,21 @@ export default function Agenda() {
         )}
 
         {viewMode === 'week' && (
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-2 auto-rows-[208px]">
             {weekDays.map((day) => {
               const dateStr = format(day, 'yyyy-MM-dd');
               const dayAppointments = appointments?.filter(a => a.appointment_date === dateStr) || [];
               const dayHoliday = isHoliday(dateStr);
               const isToday = isSameDay(day, new Date());
+              const isPastDay = isPast(startOfDay(day)) && !isToday;
 
               return (
                 <div
                   key={dateStr}
                   className={cn(
-                    'p-3 rounded-xl border min-h-[200px] transition-colors cursor-pointer',
+                    'p-3 rounded-xl border h-full transition-colors flex flex-col cursor-pointer',
                     isToday ? 'border-primary bg-primary/5' : 'border-border bg-card',
+                    isPastDay && 'opacity-60',
                     'hover:border-primary/50'
                   )}
                   onClick={() => {
@@ -411,7 +500,7 @@ export default function Agenda() {
                     setViewMode('day');
                   }}
                 >
-                  <div className="text-center mb-2">
+                  <div className="text-center mb-2 flex-shrink-0">
                     <p className="text-xs text-muted-foreground capitalize">
                       {format(day, 'EEE', { locale: ptBR })}
                     </p>
@@ -427,7 +516,7 @@ export default function Agenda() {
                     )}
                   </div>
                   
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1 overflow-y-auto">
                     {dayAppointments.slice(0, 3).map((apt) => (
                       <div
                         key={apt.id}
@@ -452,42 +541,81 @@ export default function Agenda() {
 
         {viewMode === 'month' && (
           <>
-            {filteredAppointments.length === 0 ? (() => {
-              // Verificar se o mês selecionado é no passado ou futuro
-              const currentMonth = startOfMonth(new Date());
-              const selectedMonth = startOfMonth(selectedDate);
-              const isPastMonth = selectedMonth < currentMonth;
-              
-              return (
-                <div className="p-8 rounded-xl bg-card border border-border text-center">
-                  <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <h3 className="font-medium text-foreground mb-1">Nenhum agendamento</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isPastMonth 
-                      ? 'Não houve consultas para este mês'
-                      : 'Não há consultas para este mês'
-                    }
-                  </p>
+            {/* Cabeçalho dos dias da semana */}
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dayName) => (
+                <div key={dayName} className="text-center text-sm font-semibold text-muted-foreground py-2">
+                  {dayName}
                 </div>
-              );
-            })() : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredAppointments
-                  .sort((a, b) => {
-                    const dateCompare = a.appointment_date.localeCompare(b.appointment_date);
-                    if (dateCompare !== 0) return dateCompare;
-                    return a.appointment_time.localeCompare(b.appointment_time);
-                  })
-                  .map((appointment) => (
-                    <AppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                      onStatusChange={handleStatusChange}
-                      onPaymentChange={handlePaymentChange}
-                    />
-                  ))}
-              </div>
-            )}
+              ))}
+            </div>
+
+            {/* Grid do calendário mensal */}
+            <div className="grid grid-cols-7 gap-2 auto-rows-[208px]">
+              {monthDays.map((day) => {
+                const dateStr = format(day, 'yyyy-MM-dd');
+                const dayAppointments = filteredAppointments.filter(a => a.appointment_date === dateStr);
+                const dayHoliday = isHoliday(dateStr);
+                const isToday = isSameDay(day, new Date());
+                const isCurrentMonth = isSameMonth(day, selectedDate);
+                const isPastDay = isPast(startOfDay(day)) && !isToday;
+
+                return (
+                  <div
+                    key={dateStr}
+                    className={cn(
+                      'p-3 rounded-xl border h-full transition-colors flex flex-col cursor-pointer',
+                      isToday ? 'border-primary bg-primary/5' : 'border-border bg-card',
+                      !isCurrentMonth && 'opacity-40',
+                      isPastDay && 'opacity-60',
+                      'hover:border-primary/50'
+                    )}
+                    onClick={() => {
+                      handleDateChange(day);
+                      setViewMode('day');
+                    }}
+                  >
+                    <div className="text-center mb-2 flex-shrink-0">
+                      <p className={cn(
+                        'text-xs mb-1',
+                        isCurrentMonth ? 'text-muted-foreground' : 'text-muted-foreground/50',
+                        'capitalize'
+                      )}>
+                        {format(day, 'EEE', { locale: ptBR })}
+                      </p>
+                      <p className={cn(
+                        'text-lg font-semibold',
+                        isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground',
+                        dayHoliday && 'text-destructive'
+                      )}>
+                        {format(day, 'd')}
+                      </p>
+                      {dayHoliday && (
+                        <p className="text-xs text-destructive truncate">{dayHoliday.name}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1 flex-1 overflow-y-auto">
+                      {dayAppointments.slice(0, 3).map((apt) => (
+                        <div
+                          key={apt.id}
+                          className="p-2 rounded bg-primary/10 text-xs"
+                        >
+                          <p className="font-medium text-foreground truncate">
+                            {apt.appointment_time.slice(0, 5)} - {apt.clients?.name}
+                          </p>
+                        </div>
+                      ))}
+                      {dayAppointments.length > 3 && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          +{dayAppointments.length - 3} mais
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
       </div>

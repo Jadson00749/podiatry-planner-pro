@@ -11,6 +11,7 @@ export interface Profile {
   working_hours_start: string | null;
   working_hours_end: string | null;
   appointment_duration: number | null;
+  working_days: number[] | null;
   created_at: string;
   updated_at: string;
 }

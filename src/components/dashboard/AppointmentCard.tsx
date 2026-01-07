@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, User, DollarSign, MessageCircle } from 'lucide-react';
+import { Clock, User, DollarSign, MessageCircle, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -104,7 +104,7 @@ export function AppointmentCard({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
         <div className="flex items-center gap-1">
           <Clock className="w-4 h-4" />
           <span>{appointment.appointment_time.slice(0, 5)}</span>
@@ -112,6 +112,24 @@ export function AppointmentCard({
         <div className="flex items-center gap-1">
           <DollarSign className="w-4 h-4" />
           <span>R$ {Number(appointment.price).toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
+        <div className="flex items-start gap-2">
+          <FileText className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Observações</p>
+            {appointment.notes ? (
+              <p className="text-sm text-foreground whitespace-pre-wrap break-words">
+                {appointment.notes}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                Sem observações para este agendamento
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

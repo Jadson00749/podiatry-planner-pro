@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format } from 'date-fns';
+import { format, setHours, setMinutes, addMinutes, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { getHolidaysForMonth } from '@/lib/holidays';
-import { isHolidayDate, disablePastDates } from '@/lib/calendar';
+import { isHolidayDate, disablePastDates, disableNonWorkingDays } from '@/lib/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,9 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { useClients, useCreateClient } from '@/hooks/useClients';
 import { useProcedures } from '@/hooks/useProcedures';
-import { useCreateAppointment } from '@/hooks/useAppointments';
+import { useCreateAppointment, useAppointments } from '@/hooks/useAppointments';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +60,8 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
   const [currentMonth, setCurrentMonth] = useState<Date>(defaultDate ? new Date(defaultDate) : new Date());
   const { data: clients } = useClients();
   const { data: procedures } = useProcedures();
+  const { data: profile } = useProfile();
+  const { data: allAppointments } = useAppointments();
   const createAppointment = useCreateAppointment();
   const createClient = useCreateClient();
   const { toast } = useToast();
@@ -133,12 +138,80 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
     }
   };
 
-  // Generate time slots (7:00 até 23:30)
-  const timeSlots = [];
-  for (let hour = 7; hour <= 23; hour++) {
-    timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
-    timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
-  }
+  // Generate time slots based on profile settings
+  const timeSlots = useMemo(() => {
+    if (!profile?.working_hours_start || !profile?.working_hours_end || !profile?.appointment_duration) {
+      // Fallback: se não houver configuração, usar horário padrão (8h às 18h, 30min)
+      const slots = [];
+      for (let hour = 8; hour < 18; hour++) {
+        slots.push(`${hour.toString().padStart(2, '0')}:00`);
+        slots.push(`${hour.toString().padStart(2, '0')}:30`);
+      }
+      return slots;
+    }
+
+    const slots = [];
+    const [startHour, startMinute] = profile.working_hours_start.split(':').map(Number);
+    const [endHour, endMinute] = profile.working_hours_end.split(':').map(Number);
+    
+    let currentTime = setHours(new Date(), startHour);
+    currentTime = setMinutes(currentTime, startMinute);
+    let endTime = setHours(new Date(), endHour);
+    endTime = setMinutes(endTime, endMinute);
+
+    while (isBefore(currentTime, endTime) || format(currentTime, 'HH:mm') === format(endTime, 'HH:mm')) {
+      slots.push(format(currentTime, 'HH:mm'));
+      currentTime = addMinutes(currentTime, profile.appointment_duration);
+      
+      // Prevenir loop infinito
+      if (slots.length > 200) break;
+      
+      // Se o próximo horário já passou do fim, parar
+      if (isBefore(endTime, currentTime)) break;
+    }
+
+    return slots;
+  }, [profile]);
+
+  // Buscar agendamentos do dia selecionado
+  const selectedDateStr = appointmentForm.watch('appointment_date');
+  const bookedTimes = useMemo(() => {
+    if (!selectedDateStr || !allAppointments) return new Set<string>();
+    
+    const appointmentsOnDate = allAppointments.filter(
+      apt => apt.appointment_date === selectedDateStr && apt.status !== 'cancelled'
+    );
+    
+    // Normalizar horários para comparação (remover segundos se houver)
+    const bookedTimesSet = new Set<string>();
+    appointmentsOnDate.forEach(apt => {
+      // Garantir formato HH:MM (remover segundos se existirem)
+      const time = apt.appointment_time.slice(0, 5);
+      bookedTimesSet.add(time);
+    });
+    
+    return bookedTimesSet;
+  }, [selectedDateStr, allAppointments]);
+
+  // Mapa de horários para informações do agendamento
+  const bookedAppointmentsMap = useMemo(() => {
+    if (!selectedDateStr || !allAppointments) return new Map<string, { clientName: string; time: string }>();
+    
+    const appointmentsOnDate = allAppointments.filter(
+      apt => apt.appointment_date === selectedDateStr && apt.status !== 'cancelled'
+    );
+    
+    const map = new Map<string, { clientName: string; time: string }>();
+    appointmentsOnDate.forEach(apt => {
+      const time = apt.appointment_time.slice(0, 5);
+      map.set(time, {
+        clientName: apt.clients?.name || 'Cliente não identificado',
+        time: time,
+      });
+    });
+    
+    return map;
+  }, [selectedDateStr, allAppointments]);
 
   // Date handling
   const selectedDate = appointmentForm.watch('appointment_date')
@@ -301,7 +374,7 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
                   onSelect={handleDateSelect}
                   locale={ptBR}
                   initialFocus
-                  disabled={disablePastDates}
+                  disabled={(date) => disablePastDates(date) || disableNonWorkingDays(profile?.working_days)(date)}
                   modifiers={{
                     holiday: isHolidayDate,
                   }}
@@ -340,21 +413,76 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
           <Label>Horário</Label>
           <Select
             value={appointmentForm.watch('appointment_time')}
-            onValueChange={(value) => appointmentForm.setValue('appointment_time', value)}
+            onValueChange={(value) => {
+              if (!bookedTimes.has(value)) {
+                appointmentForm.setValue('appointment_time', value);
+              } else {
+                toast({
+                  variant: 'destructive',
+                  title: 'Horário indisponível',
+                  description: 'Este horário já está agendado. Selecione outro horário.',
+                });
+              }
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Horário" />
             </SelectTrigger>
             <SelectContent>
-              {timeSlots.map((time) => (
-                <SelectItem key={time} value={time}>
-                  {time}
-                </SelectItem>
-              ))}
+              {timeSlots.map((time) => {
+                const isBooked = bookedTimes.has(time);
+                const appointmentInfo = bookedAppointmentsMap.get(time);
+                const selectItem = (
+                  <SelectItem 
+                    key={time}
+                    value={time} 
+                    disabled={isBooked}
+                    className={cn(
+                      isBooked && 'opacity-60 cursor-not-allowed',
+                      'pr-0'
+                    )}
+                  >
+                    <div className="flex items-center w-full">
+                      <span className="flex-shrink-0">{time}</span>
+                      <div className="flex-1"></div>
+                      {isBooked ? (
+                        <Badge variant="destructive" className="text-xs bg-destructive/10 text-destructive border-destructive/20 shrink-0 ml-2">
+                          Agendado
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="text-xs bg-success/10 text-success border-success/20 shrink-0 ml-2">
+                          Livre
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                );
+
+                if (isBooked && appointmentInfo) {
+                  return (
+                    <Tooltip key={time}>
+                      <TooltipTrigger asChild>
+                        {selectItem}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-medium">{appointmentInfo.clientName}</p>
+                        <p className="text-xs text-muted-foreground">Horário: {appointmentInfo.time}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return selectItem;
+              })}
             </SelectContent>
           </Select>
           {appointmentForm.formState.errors.appointment_time && (
             <p className="text-xs text-destructive">{appointmentForm.formState.errors.appointment_time.message}</p>
+          )}
+          {selectedDateStr && bookedTimes.size > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {bookedTimes.size} horário(s) já agendado(s) neste dia
+            </p>
           )}
         </div>
       </div>

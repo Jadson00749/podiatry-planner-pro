@@ -385,10 +385,15 @@ export default function ClienteDetalhes() {
           <TabsContent value="dados" className="mt-6 space-y-6">
             {/* Ações Rápidas */}
             <div className="rounded-xl bg-card border border-border p-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <h3 className="font-semibold text-foreground">Ações Rápidas</h3>
                 {!isEditing && (
-                  <Button variant="outline" size="sm" onClick={handleEdit}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleEdit}
+                    className="w-full sm:w-auto"
+                  >
                     <Edit2 className="h-4 w-4 mr-2" />
                     Editar Dados
                   </Button>
@@ -400,6 +405,7 @@ export default function ClienteDetalhes() {
                     variant="outline" 
                     size="sm"
                     onClick={() => window.open(`tel:${client.phone}`)}
+                    className="flex-1 sm:flex-initial"
                   >
                     <Phone className="h-4 w-4 mr-2" />
                     Ligar
@@ -410,6 +416,7 @@ export default function ClienteDetalhes() {
                     variant="outline" 
                     size="sm"
                     onClick={() => window.open(generateWhatsAppLink(client.whatsapp!, 'Olá!'))}
+                    className="flex-1 sm:flex-initial"
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
                     WhatsApp
@@ -495,12 +502,12 @@ export default function ClienteDetalhes() {
               </div>
 
               {isEditing && (
-                <div className="flex gap-2 mt-6">
-                  <Button onClick={handleSave} className="gradient-primary">
+                <div className="flex flex-col sm:flex-row gap-2 mt-6">
+                  <Button onClick={handleSave} className="gradient-primary w-full sm:w-auto">
                     <Save className="h-4 w-4 mr-2" />
                     Salvar
                   </Button>
-                  <Button variant="outline" onClick={handleCancel}>
+                  <Button variant="outline" onClick={handleCancel} className="w-full sm:w-auto">
                     <X className="h-4 w-4 mr-2" />
                     Cancelar
                   </Button>
@@ -569,8 +576,8 @@ export default function ClienteDetalhes() {
             {/* Status da Anamnese */}
             <div className="rounded-xl bg-card border border-border p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Status da Anamnese</h3>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   {hasAnamnesis ? (
                     <>
                       <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
@@ -596,7 +603,10 @@ export default function ClienteDetalhes() {
                   variant={hasAnamnesis ? "outline" : "default"}
                   size="sm"
                   onClick={handleNavigateToAnamneseEdit}
-                  className={hasAnamnesis ? "" : "gradient-primary"}
+                  className={cn(
+                    hasAnamnesis ? "" : "gradient-primary",
+                    "w-full sm:w-auto"
+                  )}
                 >
                   {hasAnamnesis ? (
                     <>
@@ -619,8 +629,8 @@ export default function ClienteDetalhes() {
             {/* Status da Anamnese */}
             <div className="rounded-xl bg-card border border-border p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Status da Anamnese</h3>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   {hasAnamnesis ? (
                     <>
                       <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
@@ -647,7 +657,10 @@ export default function ClienteDetalhes() {
                     variant={hasAnamnesis ? "outline" : "default"}
                     size="sm"
                     onClick={hasAnamnesis ? handleEditAnamnesis : handleCreateAnamnesis}
-                    className={hasAnamnesis ? "" : "gradient-primary"}
+                    className={cn(
+                      hasAnamnesis ? "" : "gradient-primary",
+                      "w-full sm:w-auto"
+                    )}
                   >
                     {hasAnamnesis ? (
                       <>
@@ -857,12 +870,12 @@ export default function ClienteDetalhes() {
 
                 {/* Botões de ação */}
                 {isEditingAnamnesis && (
-                  <div className="flex gap-2">
-                    <Button onClick={handleSaveAnamnesis} className="gradient-primary">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={handleSaveAnamnesis} className="gradient-primary w-full sm:w-auto">
                       <Save className="h-4 w-4 mr-2" />
                       Salvar Anamnese
                     </Button>
-                    <Button variant="outline" onClick={handleCancelAnamnesis}>
+                    <Button variant="outline" onClick={handleCancelAnamnesis} className="w-full sm:w-auto">
                       <X className="h-4 w-4 mr-2" />
                       Cancelar
                     </Button>

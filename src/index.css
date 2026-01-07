@@ -191,4 +191,32 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
   }
+
+  /* Calendar disabled days cursor - aplica em todos os elementos desabilitados */
+  .rdp-day_disabled,
+  .rdp-day[disabled],
+  button.rdp-day_disabled,
+  button.rdp-day[disabled],
+  .rdp-button[disabled],
+  .rdp-button_reset[disabled],
+  button[aria-disabled="true"],
+  .rdp-day_disabled:hover,
+  .rdp-day[disabled]:hover,
+  button[disabled],
+  [role="gridcell"] button[disabled],
+  [role="gridcell"] .rdp-day_disabled {
+    cursor: not-allowed !important;
+  }
+  
+  /* Força cursor em células com dias desabilitados */
+  [role="gridcell"]:has(button[disabled]),
+  [role="gridcell"]:has(.rdp-day_disabled) {
+    cursor: not-allowed !important;
+  }
+
+  /* Botões desabilitados - cursor not-allowed */
+  button:disabled,
+  button[disabled] {
+    cursor: not-allowed !important;
+  }
 }

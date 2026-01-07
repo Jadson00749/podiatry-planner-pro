@@ -64,3 +64,7 @@ CREATE TRIGGER update_anamnesis_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_anamnesis_updated_at();
 
+
+
+
+
