@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, addDays, addMonths, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, isWithinInterval, isSameMonth, isPast, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, X, Download, FileSpreadsheet, FileType } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { AppointmentCard } from '@/components/dashboard/AppointmentCard';
@@ -16,6 +16,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportAppointments } from '@/utils/exportAppointments';
+import { useToast } from '@/hooks/use-toast';
 
 type ViewMode = 'day' | 'week' | 'month';
 type StatusFilter = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
@@ -49,6 +52,7 @@ export default function Agenda() {
 
   const { data: appointments, isLoading } = useAppointments();
   const updateAppointment = useUpdateAppointment();
+  const { toast } = useToast();
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -166,6 +170,52 @@ export default function Agenda() {
 
   const hasActiveFilters = statusFilters.length > 0 || paymentFilters.length > 0;
 
+  const handleExport = (format: 'excel' | 'pdf') => {
+    try {
+      if (!appointments || appointments.length === 0) {
+        toast({
+          title: 'Nenhum agendamento',
+          description: 'Não há agendamentos para exportar.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const appointmentsToExport = filteredAppointments.length > 0 ? filteredAppointments : appointments;
+      
+      if (appointmentsToExport.length === 0) {
+        toast({
+          title: 'Nenhum agendamento',
+          description: 'Não há agendamentos para exportar com os filtros aplicados.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Determinar período baseado nos agendamentos filtrados
+      const dates = appointmentsToExport.map(apt => apt.appointment_date).sort();
+      const startDate = dates[0];
+      const endDate = dates[dates.length - 1];
+
+      exportAppointments(appointmentsToExport, { 
+        format,
+        startDate,
+        endDate,
+      });
+
+      toast({
+        title: 'Exportação realizada!',
+        description: `${appointmentsToExport.length} agendamento(s) exportado(s) com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao exportar agendamentos:', error);
+      toast({
+        title: 'Erro na exportação',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao exportar os agendamentos.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <AppLayout>
@@ -178,27 +228,56 @@ export default function Agenda() {
             </p>
           </div>
           
-          <Dialog open={isNewAppointmentOpen} onOpenChange={setIsNewAppointmentOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className={cn("gradient-primary", isPastDate && "cursor-not-allowed disabled:cursor-not-allowed")}
-                disabled={isPastDate}
-                title={isPastDate ? "Não é possível criar agendamentos em datas passadas" : ""}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Agendamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Novo Agendamento</DialogTitle>
-              </DialogHeader>
-              <NewAppointmentForm 
-                defaultDate={format(selectedDate, 'yyyy-MM-dd')}
-                onSuccess={() => setIsNewAppointmentOpen(false)} 
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            {appointments && appointments.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => handleExport('excel')}
+                    className="cursor-pointer"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                    Exportar como Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleExport('pdf')}
+                    className="cursor-pointer"
+                  >
+                    <FileType className="h-4 w-4 mr-2 text-red-600" />
+                    Exportar como PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            <Dialog open={isNewAppointmentOpen} onOpenChange={setIsNewAppointmentOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  className={cn("gradient-primary", isPastDate && "cursor-not-allowed disabled:cursor-not-allowed")}
+                  disabled={isPastDate}
+                  title={isPastDate ? "Não é possível criar agendamentos em datas passadas" : ""}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Agendamento
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Novo Agendamento</DialogTitle>
+                </DialogHeader>
+                <NewAppointmentForm 
+                  defaultDate={format(selectedDate, 'yyyy-MM-dd')}
+                  onSuccess={() => setIsNewAppointmentOpen(false)} 
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Controls */}

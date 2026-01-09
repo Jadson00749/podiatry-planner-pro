@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears, differenceInDays, subDays, eachMonthOfInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DollarSign, TrendingUp, Clock, CheckCircle, TrendingDown, ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, CheckCircle, TrendingDown, ArrowUpRight, ArrowDownRight, Calendar, Download, FileSpreadsheet, FileType } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useAppointments, useMonthStats, usePeriodStats, useUpdateAppointment } from '@/hooks/useAppointments';
@@ -12,6 +12,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportFinancial } from '@/utils/exportFinancial';
+import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type PeriodOption = 'current-month' | 'last-month' | 'last-3-months' | 'last-6-months' | 'current-year' | 'last-year' | 'custom';
@@ -20,6 +23,7 @@ export default function Financeiro() {
   const { data: appointments } = useAppointments();
   const { data: procedures } = useProcedures();
   const { theme } = useTheme();
+  const { toast } = useToast();
   const currentDate = new Date();
   const [periodOption, setPeriodOption] = useState<PeriodOption>('current-month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
@@ -115,6 +119,37 @@ export default function Financeiro() {
   
   const handleMarkAsPaid = (id: string) => {
     updateAppointment.mutate({ id, payment_status: 'paid' });
+  };
+
+  const handleExport = (format: 'excel' | 'pdf') => {
+    try {
+      if (!appointments || appointments.length === 0) {
+        toast({
+          title: 'Nenhum agendamento',
+          description: 'Não há agendamentos para exportar.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      exportFinancial(appointments, { 
+        format,
+        startDate: periodDates.start,
+        endDate: periodDates.end,
+      });
+
+      toast({
+        title: 'Exportação realizada!',
+        description: 'Relatório financeiro exportado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao exportar relatório financeiro:', error);
+      toast({
+        title: 'Erro na exportação',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao exportar o relatório financeiro.',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Cálculos de comparação
@@ -306,6 +341,33 @@ export default function Financeiro() {
           </div>
           
           <div className="flex flex-col gap-2 sm:flex-row">
+            {appointments && appointments.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => handleExport('excel')}
+                    className="cursor-pointer"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                    Exportar como Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleExport('pdf')}
+                    className="cursor-pointer"
+                  >
+                    <FileType className="h-4 w-4 mr-2 text-red-600" />
+                    Exportar como PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
             <Select value={periodOption} onValueChange={(value) => setPeriodOption(value as PeriodOption)}>
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Selecione o período" />
