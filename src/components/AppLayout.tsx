@@ -17,6 +17,11 @@ import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { NotificationBell } from './NotificationBell';
+// Notificações push desativadas - não funcionam bem no mobile
+// import { usePushNotifications } from '@/hooks/usePushNotifications';
+// import { PushNotificationPrompt } from './PushNotificationPrompt';
+// import { UpdateBanner } from './UpdateBanner';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,6 +36,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut } = useAuth();
   const { data: profile } = useProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  
+  // Notificações push desativadas
+  // usePushNotifications();
 
   const NavContent = () => (
     <nav className="flex flex-col h-full">
@@ -90,14 +98,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="flex items-center justify-between px-2">
           <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={signOut}
-            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {profile?.notifications_enabled && location.pathname !== '/configuracoes' && <NotificationBell />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
     </nav>
@@ -138,6 +149,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen flex flex-col">
+        {/* Notificações push desativadas */}
+        {/* <PushNotificationPrompt /> */}
+        {/* <UpdateBanner /> */}
         <div className="flex-1 p-4 lg:p-8">
           {children}
         </div>

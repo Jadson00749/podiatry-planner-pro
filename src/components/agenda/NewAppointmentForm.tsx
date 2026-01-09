@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, setHours, setMinutes, addMinutes, isBefore } from 'date-fns';
+import { format, setHours, setMinutes, addMinutes, isBefore, isToday, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { getHolidaysForMonth } from '@/lib/holidays';
@@ -90,6 +90,27 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
   };
 
   const handleSubmit = async (data: AppointmentFormData) => {
+    // Validação adicional: verificar se o horário já passou (se a data for hoje)
+    const selectedDate = new Date(data.appointment_date + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate.getTime() === today.getTime()) {
+      const [hours, minutes] = data.appointment_time.split(':').map(Number);
+      const timeSlot = new Date();
+      timeSlot.setHours(hours, minutes, 0, 0);
+      const now = new Date();
+      
+      if (isBefore(timeSlot, now)) {
+        toast({
+          variant: 'destructive',
+          title: 'Horário inválido',
+          description: 'Não é possível agendar em horários que já passaram.',
+        });
+        return;
+      }
+    }
+    
     setIsLoading(true);
     
     try {
@@ -432,13 +453,25 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
               {timeSlots.map((time) => {
                 const isBooked = bookedTimes.has(time);
                 const appointmentInfo = bookedAppointmentsMap.get(time);
+                
+                // Verificar se o horário já passou (apenas se a data selecionada for hoje)
+                const isPastTime = selectedDateStr && isToday(new Date(selectedDateStr + 'T00:00:00')) && (() => {
+                  const now = new Date();
+                  const [hours, minutes] = time.split(':').map(Number);
+                  const timeSlot = new Date();
+                  timeSlot.setHours(hours, minutes, 0, 0);
+                  return isBefore(timeSlot, now);
+                })();
+                
+                const isDisabled = isBooked || isPastTime;
+                
                 const selectItem = (
                   <SelectItem 
                     key={time}
                     value={time} 
-                    disabled={isBooked}
+                    disabled={isDisabled}
                     className={cn(
-                      isBooked && 'opacity-60 cursor-not-allowed',
+                      isDisabled && 'opacity-60 cursor-not-allowed',
                       'pr-0'
                     )}
                   >
@@ -449,13 +482,17 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
                         <Badge variant="destructive" className="text-xs bg-destructive/10 text-destructive border-destructive/20 shrink-0 ml-2">
                           Agendado
                         </Badge>
+                      ) : isPastTime ? (
+                        <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground border-border shrink-0 ml-2">
+                          Passado
+                        </Badge>
                       ) : (
                         <Badge variant="default" className="text-xs bg-success/10 text-success border-success/20 shrink-0 ml-2">
                           Livre
                         </Badge>
                       )}
                     </div>
-                  </SelectItem>
+                </SelectItem>
                 );
 
                 if (isBooked && appointmentInfo) {

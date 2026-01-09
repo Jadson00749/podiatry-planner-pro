@@ -1,0 +1,27 @@
+{
+  "name": "PodoAgenda - Gestão Podológica",
+  "short_name": "PodoAgenda",
+  "description": "Sistema completo de gestão para clínicas de podologia",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#14b8a6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["medical", "business", "productivity"],
+  "screenshots": [],
+  "shortcuts": []
+}
+

@@ -60,7 +60,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Limpar dados locais primeiro
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Fazer logout do Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      
+      if (error) {
+        console.error('Erro ao fazer logout:', error);
+        // Mesmo com erro, limpar estado local
+        setUser(null);
+        setSession(null);
+        // Redirecionar para login
+        window.location.href = '/auth';
+        return;
+      }
+      
+      // Limpar estado
+      setUser(null);
+      setSession(null);
+      
+      // Redirecionar para login
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Mesmo com erro, limpar estado e redirecionar
+      setUser(null);
+      setSession(null);
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/auth';
+    }
   };
 
   return (

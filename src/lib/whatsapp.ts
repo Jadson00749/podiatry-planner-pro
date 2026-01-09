@@ -28,12 +28,15 @@ export function generateAppointmentReminderMessage(
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    year: 'numeric',
   });
+
+  const formattedTime = time.slice(0, 5); // Garante formato HH:MM
 
   let message = `Olá ${clientName}! 👋\n\n`;
   message += `Este é um lembrete do seu agendamento:\n\n`;
   message += `📅 *Data:* ${formattedDate}\n`;
-  message += `⏰ *Horário:* ${time}\n`;
+  message += `⏰ *Horário:* ${formattedTime}\n`;
   
   if (clinicName) {
     message += `📍 *Local:* ${clinicName}\n`;

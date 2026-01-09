@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Phone, MessageCircle, User, MoreVertical, Trash, InfoIcon } from 'lucide-react';
+import { Search, Plus, Phone, MessageCircle, User, MoreVertical, Trash, InfoIcon, Download, FileSpreadsheet, FileType } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generateWhatsAppLink } from '@/lib/whatsapp';
 import { formatPhone } from '@/lib/phone';
+import { exportClients } from '@/utils/exportClients';
 
 export default function Clientes() {
   const navigate = useNavigate();
@@ -35,6 +36,34 @@ export default function Clientes() {
     c.phone?.includes(search) ||
     c.whatsapp?.includes(search)
   );
+
+  const handleExport = (format: 'excel' | 'pdf') => {
+    try {
+      const clientsToExport = filteredClients && filteredClients.length > 0 ? filteredClients : clients || [];
+      
+      if (clientsToExport.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Nenhum cliente para exportar',
+          description: 'Não há clientes cadastrados para exportar.',
+        });
+        return;
+      }
+
+      exportClients(clientsToExport, { format });
+      
+      toast({
+        title: 'Exportação realizada!',
+        description: `${clientsToExport.length} cliente(s) exportado(s) com sucesso.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao exportar',
+        description: 'Não foi possível exportar os clientes. Tente novamente.',
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,10 +96,37 @@ export default function Clientes() {
             <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Clientes</h1>
             <p className="text-muted-foreground">{clients?.length || 0} clientes cadastrados</p>
           </div>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button className="gradient-primary"><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            {clients && clients.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => handleExport('excel')}
+                    className="cursor-pointer"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                    Exportar como Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleExport('pdf')}
+                    className="cursor-pointer"
+                  >
+                    <FileType className="h-4 w-4 mr-2 text-red-600" />
+                    Exportar como PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <Button className="gradient-primary"><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Novo Cliente</DialogTitle>
@@ -130,6 +186,7 @@ export default function Clientes() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <div className="relative">
@@ -179,7 +236,15 @@ export default function Clientes() {
                   <Phone className="h-4 w-4 mr-1" />Ligar
                 </Button>}
                 {client.whatsapp && 
-                <Button variant="outline" size="sm" onClick={() => window.open(generateWhatsAppLink(client.whatsapp!, 'Olá!'))}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    const message = `Olá ${client.name}! 👋\n\nComo posso ajudar você hoje?`;
+                    window.open(generateWhatsAppLink(client.whatsapp!, message), '_blank');
+                  }}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 border-green-300 dark:border-green-700"
+                >
                   <MessageCircle className="h-4 w-4 mr-1" />WhatsApp
                 </Button>}
               </div>

@@ -8,10 +8,20 @@ export interface Profile {
   full_name: string;
   phone: string | null;
   clinic_name: string | null;
+  clinic_email: string | null;
+  clinic_address: string | null;
+  clinic_cnpj: string | null;
+  clinic_website: string | null;
+  clinic_instagram: string | null;
+  clinic_facebook: string | null;
   working_hours_start: string | null;
   working_hours_end: string | null;
   appointment_duration: number | null;
   working_days: number[] | null;
+  notifications_enabled: boolean | null;
+  email_notifications_enabled: boolean | null;
+  reminder_hours_before: number[] | null;
+  email_template: string | null;
   created_at: string;
   updated_at: string;
 }

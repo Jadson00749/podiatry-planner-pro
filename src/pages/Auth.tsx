@@ -115,10 +115,10 @@ export default function Auth() {
           </div>
           
           <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
-            PodoAgenda
+          AgendaPro
           </h1>
           <p className="text-xl text-white/90 mb-8 max-w-md">
-            Gerencie sua clínica de podologia com facilidade e profissionalismo
+            Gerencie sua clínica com facilidade e profissionalismo
           </p>
           
           <div className="grid grid-cols-2 gap-6 text-left max-w-md">
@@ -126,7 +126,7 @@ export default function Auth() {
               { title: 'Agenda Inteligente', desc: 'Controle seus horários' },
               { title: 'Gestão de Clientes', desc: 'Histórico completo' },
               { title: 'Controle Financeiro', desc: 'Recebimentos e pendências' },
-              { title: 'WhatsApp', desc: 'Lembretes automáticos' },
+              { title: 'WhatsApp Integrado', desc: 'Contato rápido com clientes' },
             ].map((item) => (
               <div key={item.title} className="p-4 rounded-xl bg-white/10 backdrop-blur-sm">
                 <h3 className="font-semibold text-white">{item.title}</h3>

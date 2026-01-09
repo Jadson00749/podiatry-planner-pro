@@ -171,9 +171,10 @@ export function AppointmentCard({
             size="sm"
             variant="outline"
             onClick={handleWhatsAppReminder}
-            className="text-green-600 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+            className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 border-green-300 dark:border-green-700"
+            title="Enviar mensagem via WhatsApp"
           >
-            <MessageCircle className="w-4 h-4 mr-1" />
+            <MessageCircle className="w-4 h-4 mr-1.5" />
             WhatsApp
           </Button>
         )}

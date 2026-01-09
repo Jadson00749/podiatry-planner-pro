@@ -19,5 +19,15 @@ export default defineConfig({
   build: {
     outDir: "dist",
     copyPublicDir: true,
+    rollupOptions: {
+      output: {
+        // Adiciona hash nos nomes dos arquivos para forçar atualização
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]',
+      },
+    },
+    // Força recriação completa a cada build
+    emptyOutDir: true,
   },
 });
