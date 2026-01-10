@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { exportFinancial } from '@/utils/exportFinancial';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type PeriodOption = 'current-month' | 'last-month' | 'last-3-months' | 'last-6-months' | 'current-year' | 'last-year' | 'custom';
 
@@ -23,6 +24,7 @@ export default function Financeiro() {
   const { data: appointments } = useAppointments();
   const { data: procedures } = useProcedures();
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const currentDate = new Date();
   const [periodOption, setPeriodOption] = useState<PeriodOption>('current-month');
@@ -315,19 +317,20 @@ export default function Financeiro() {
   }, [chartData]);
 
   // Cores para os procedimentos (paleta cinza e azul)
+  // Paleta de cores harmoniosa baseada no tema do app
   const procedureColors = [
-    'hsl(174, 50%, 45%)',  // Teal (cor primária do sistema)
-    'hsl(200, 45%, 48%)',  // Azul ciano
-    'hsl(210, 40%, 50%)',  // Azul claro
-    'hsl(220, 45%, 48%)',  // Azul médio
-    'hsl(230, 40%, 46%)',  // Azul acinzentado
-    'hsl(240, 45%, 48%)',  // Azul índigo
-    'hsl(200, 30%, 52%)',  // Azul muito claro
-    'hsl(210, 35%, 50%)',  // Azul acinzentado claro
-    'hsl(220, 30%, 54%)',  // Azul acinzentado médio
-    'hsl(190, 40%, 46%)',  // Azul esverdeado
-    'hsl(180, 35%, 48%)',  // Ciano acinzentado
-    'hsl(195, 30%, 50%)',  // Azul acinzentado claro
+    'hsl(var(--primary))',           // Cor primária do app (teal)
+    'hsl(174, 65%, 52%)',            // Teal vibrante
+    'hsl(200, 70%, 55%)',            // Azul ciano vibrante
+    'hsl(220, 65%, 55%)',            // Azul médio
+    'hsl(240, 60%, 58%)',            // Azul escuro
+    'hsl(260, 55%, 58%)',            // Roxo azulado
+    'hsl(280, 50%, 58%)',            // Roxo
+    'hsl(300, 45%, 58%)',            // Magenta
+    'hsl(190, 60%, 52%)',            // Azul esverdeado
+    'hsl(210, 60%, 55%)',            // Azul claro
+    'hsl(230, 55%, 56%)',            // Azul acinzentado
+    'hsl(250, 50%, 58%)',            // Azul índigo
   ];
 
 
@@ -529,14 +532,20 @@ export default function Financeiro() {
 
         {/* Gráfico de Faturamento Mensal por Procedimento */}
         {chartData.length > 0 && uniqueProcedures.length > 0 && (
-          <div className="rounded-xl bg-card border border-border p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Faturamento Mensal por Procedimento</h2>
-            <div className="h-[300px] w-full [&_.recharts-surface]:bg-transparent [&_.recharts-tooltip-cursor]:transition-all [&_.recharts-tooltip-cursor]:duration-200 [&_.recharts-tooltip-cursor]:ease-in-out">
+          <div className="rounded-xl bg-card border border-border p-3 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Faturamento Mensal por Procedimento</h2>
+            <div className={cn(
+              "w-full [&_.recharts-surface]:bg-transparent [&_.recharts-tooltip-cursor]:transition-all [&_.recharts-tooltip-cursor]:duration-200 [&_.recharts-tooltip-cursor]:ease-in-out",
+              isMobile ? "h-[220px]" : "h-[300px]"
+            )}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={chartData} 
-                  margin={{ top: 30, right: 10, left: 0, bottom: 5 }} 
-                  barCategoryGap="20%"
+                  margin={isMobile 
+                    ? { top: 20, right: 5, left: -15, bottom: 20 } 
+                    : { top: 30, right: 10, left: 0, bottom: 5 }
+                  } 
+                  barCategoryGap={isMobile ? "10%" : "20%"}
                 >
                   <CartesianGrid 
                     strokeDasharray="3 3" 
@@ -545,15 +554,21 @@ export default function Financeiro() {
                   />
                   <XAxis 
                     dataKey="mes" 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: isMobile ? 10 : 12 }}
                     tickLine={{ stroke: 'hsl(180, 5%, 95%)' }}
                     axisLine={{ stroke: 'hsl(180, 5%, 95%)' }}
                   />
                   <YAxis 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: isMobile ? 9 : 12 }}
                     tickLine={{ stroke: 'hsl(180, 5%, 95%)' }}
                     axisLine={{ stroke: 'hsl(180, 5%, 95%)' }}
-                    tickFormatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                    tickFormatter={(value) => {
+                      if (isMobile) {
+                        if (value >= 1000) return `R$${(value / 1000).toFixed(0)}k`;
+                        return `R$${value}`;
+                      }
+                      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+                    }}
                   />
                   <Tooltip 
                     cursor={theme === 'dark' ? false : { fill: 'hsl(180, 5%, 94%)', fillOpacity: 0.5 }}
@@ -561,7 +576,8 @@ export default function Financeiro() {
                       backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
-                      padding: '8px',
+                      padding: isMobile ? '6px' : '8px',
+                      fontSize: isMobile ? '11px' : '12px',
                     }}
                     formatter={(value: number, name: string) => [
                       `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
@@ -580,20 +596,20 @@ export default function Financeiro() {
                         stackId="faturamento"
                         fill={fillColor}
                         radius={isLastBar ? [4, 4, 0, 0] : 0}
-                        barSize={60}
+                        barSize={isMobile ? 40 : 60}
                       >
                         {isLastBar && (
                           <LabelList
                             dataKey="total"
                             position="top"
-                            offset={5}
+                            offset={isMobile ? 3 : 5}
                             formatter={(value: number) => {
                               if (value === null || value === undefined || isNaN(value) || value === 0) return '';
                               return `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                             }}
                             style={{ 
                               fill: 'hsl(var(--foreground))', 
-                              fontSize: 13, 
+                              fontSize: isMobile ? 10 : 13, 
                               fontWeight: 700,
                               textShadow: '0 1px 2px rgba(0,0,0,0.1)'
                             }}
@@ -607,19 +623,21 @@ export default function Financeiro() {
             </div>
             {/* Legenda */}
             {uniqueProcedures.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-sm font-medium text-foreground mb-2">Legenda:</p>
-                <div className="flex flex-wrap gap-3">
+              <div className={cn("border-t border-border", isMobile ? "mt-3 pt-3" : "mt-4 pt-4")}>
+                <p className={cn("font-medium text-foreground mb-2", isMobile ? "text-xs" : "text-sm")}>Legenda:</p>
+                <div className={cn("flex flex-wrap", isMobile ? "gap-2" : "gap-3")}>
                   {uniqueProcedures.map((procedureName, index) => {
                     const backgroundColor = procedureColors[index % procedureColors.length];
                     
                     return (
-                      <div key={procedureName} className="flex items-center gap-2">
+                      <div key={procedureName} className="flex items-center gap-1.5 sm:gap-2">
                         <div 
-                          className="w-3 h-3 rounded-sm"
+                          className={cn("rounded-sm", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")}
                           style={{ backgroundColor: backgroundColor }}
                         />
-                        <span className="text-xs text-muted-foreground">{procedureName}</span>
+                        <span className={cn("text-muted-foreground", isMobile ? "text-[10px]" : "text-xs")}>
+                          {procedureName}
+                        </span>
                       </div>
                     );
                   })}

@@ -69,3 +69,8 @@ if (typeof window !== 'undefined') {
   console.log('💡 Digite debugApp() no console para ver informações do app');
 }
 
+
+
+
+
+

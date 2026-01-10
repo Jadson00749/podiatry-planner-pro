@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowLeft, User, Phone, MessageCircle, Edit2, Save, X, CheckCircle2, XCircle, Calendar, Clock, Footprints, FileText, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, Phone, MessageCircle, Edit2, Save, X, CheckCircle2, XCircle, Calendar, Clock, Footprints, FileText, DollarSign, TrendingUp, AlertCircle, Download, FileSpreadsheet, FileType } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,8 @@ import { generateWhatsAppLink } from '@/lib/whatsapp';
 import { formatPhone } from '@/lib/phone';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportClientDetails } from '@/utils/exportClientDetails';
 
 export default function ClienteDetalhes() {
   const { id } = useParams<{ id: string }>();
@@ -319,6 +321,38 @@ export default function ClienteDetalhes() {
     }
   };
 
+  const handleExport = (format: 'excel' | 'pdf') => {
+    try {
+      if (!client) {
+        toast({
+          title: 'Erro',
+          description: 'Cliente não encontrado.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      exportClientDetails({
+        format,
+        client,
+        appointments: appointments || [],
+        anamnesis: anamnesis || null,
+      });
+
+      toast({
+        title: 'Exportação realizada!',
+        description: 'Histórico do cliente exportado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao exportar histórico do cliente:', error);
+      toast({
+        title: 'Erro na exportação',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao exportar o histórico do cliente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -350,25 +384,53 @@ export default function ClienteDetalhes() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-4 sm:space-y-6 animate-fade-in px-4 sm:px-0">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate('/clientes')}
-            className="hover:bg-muted"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-6 h-6 text-primary" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/clientes')}
+              className="hover:bg-muted flex-shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">{client.name}</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">Detalhamento do cliente</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-foreground">{client.name}</h1>
-              <p className="text-muted-foreground">Detalhamento do cliente</p>
-            </div>
+          </div>
+          <div className="flex-shrink-0 sm:self-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem 
+                  onClick={() => handleExport('excel')}
+                  className="cursor-pointer"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                  Exportar como Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleExport('pdf')}
+                  className="cursor-pointer"
+                >
+                  <FileType className="h-4 w-4 mr-2 text-red-600" />
+                  Exportar como PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -382,9 +444,9 @@ export default function ClienteDetalhes() {
           </TabsList>
 
           {/* Tab: Dados */}
-          <TabsContent value="dados" className="mt-6 space-y-6">
+          <TabsContent value="dados" className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
             {/* Ações Rápidas */}
-            <div className="rounded-xl bg-card border border-border p-4">
+            <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <h3 className="font-semibold text-foreground">Ações Rápidas</h3>
                 {!isEditing && (
@@ -426,9 +488,9 @@ export default function ClienteDetalhes() {
             </div>
 
             {/* Informações de Contato */}
-            <div className="rounded-xl bg-card border border-border p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Informações de Contato</h3>
-              <div className="space-y-4">
+            <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-5">Informações de Contato</h3>
+              <div className="space-y-4 sm:space-y-5">
                 <div>
                   <Label>Nome</Label>
                   {isEditing ? (
@@ -516,7 +578,7 @@ export default function ClienteDetalhes() {
             </div>
 
             {/* Observações Gerais */}
-            <div className="rounded-xl bg-card border border-border p-6">
+            <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Observações gerais (não clínicas)</h3>
               {isEditing ? (
                 <Textarea 
@@ -533,7 +595,7 @@ export default function ClienteDetalhes() {
             </div>
 
             {/* Informações de Contexto */}
-            <div className="rounded-xl bg-card border border-border p-6">
+            <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Informações de Contexto</h3>
               {isLoadingAppointments ? (
                 <p className="text-muted-foreground">Carregando estatísticas...</p>
@@ -574,8 +636,8 @@ export default function ClienteDetalhes() {
             </div>
 
             {/* Status da Anamnese */}
-            <div className="rounded-xl bg-card border border-border p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Status da Anamnese</h3>
+            <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-5">Status da Anamnese</h3>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   {hasAnamnesis ? (
@@ -625,10 +687,10 @@ export default function ClienteDetalhes() {
           </TabsContent>
 
           {/* Tab: Anamnese */}
-          <TabsContent value="anamnese" className="mt-6 space-y-6">
+          <TabsContent value="anamnese" className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
             {/* Status da Anamnese */}
-            <div className="rounded-xl bg-card border border-border p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Status da Anamnese</h3>
+            <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-5">Status da Anamnese</h3>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   {hasAnamnesis ? (
@@ -914,7 +976,7 @@ export default function ClienteDetalhes() {
           </TabsContent>
 
           {/* Tab: Financeiro */}
-          <TabsContent value="financeiro" className="mt-6 space-y-6">
+          <TabsContent value="financeiro" className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
             {isLoadingAppointments ? (
               <div className="flex items-center justify-center p-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>

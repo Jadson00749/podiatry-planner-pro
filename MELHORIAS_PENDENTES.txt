@@ -1,0 +1,234 @@
+================================================================================
+                    MELHORIAS E FUNCIONALIDADES PENDENTES
+                          PodoAgenda - Sistema de Gestão
+================================================================================
+
+Data: Janeiro 2025
+Status: Sistema funcional com exportações implementadas
+
+================================================================================
+                            PRIORIDADE ALTA
+================================================================================
+
+1. RELATÓRIOS AVANÇADOS
+   1.1. Relatório por Procedimento (EXPANDIR)
+       - Procedimentos mais procurados ✅ (já existe em Relatórios)
+       - Faturamento por procedimento ✅ (já existe em Relatórios)
+       - Quantidade realizada por procedimento ✅ (já existe em Relatórios)
+       - Ticket médio por procedimento (adicionar)
+   
+   1.2. Relatório de Clientes Mais Frequentes (EXPANDIR)
+       - Top 10 clientes mais frequentes ✅ (já existe em Relatórios)
+       - Total gasto por cliente ✅ (já existe em Relatórios)
+       - Última consulta de cada cliente ✅ (já existe em Relatórios)
+       - Análise de retenção de clientes (adicionar)
+   
+   1.3. Relatório de Horários Mais Ocupados (EXPANDIR)
+       - Horários com mais agendamentos ✅ (já existe em Relatórios)
+       - Dias da semana mais movimentados ✅ (já existe em Relatórios)
+       - Análise de ocupação por período ✅ (já existe em Relatórios)
+       - Previsão de demanda (adicionar)
+
+================================================================================
+                            PRIORIDADE MÉDIA
+================================================================================
+
+2. BACKUP E RESTAURAÇÃO DE DADOS ✅ (COMPLETO)
+   - Exportar todos os dados do sistema (backup completo) ✅
+   - Incluir: clientes, agendamentos, procedimentos, configurações, anamnese ✅
+   - Formato: JSON ✅
+   - Validação de arquivo de backup ✅
+   - Funcionalidade de importação/restauração ✅
+   - Localização: Página Configurações (seção "Backup") ✅
+
+================================================================================
+                            PRIORIDADE BAIXA
+================================================================================
+
+3. GRÁFICOS NO DASHBOARD (MELHORAR)
+   3.1. Gráfico de Receitas ao Longo do Tempo ✅ (já existe)
+       - Linha temporal (últimos 6 meses) ✅
+       - Comparativo mês a mês ✅
+       - Previsão de receita (adicionar)
+   
+   3.2. Gráfico de Procedimentos Mais Realizados ✅ (já existe em Relatórios)
+       - Gráfico de pizza ✅
+       - Top 5 procedimentos ✅
+       - Percentual de cada procedimento ✅
+   
+   3.3. Gráfico de Ocupação ✅ (já existe em Relatórios)
+       - Horários mais ocupados ✅
+       - Dias da semana mais movimentados ✅
+       - Taxa de ocupação mensal (adicionar)
+
+7. LEMBRETES PERSONALIZADOS
+   - Templates de mensagem customizáveis por tipo de procedimento
+   - Variáveis dinâmicas (nome, data, horário, procedimento)
+   - Editor de templates rico (WYSIWYG)
+   - Preview de mensagem antes de enviar
+   - Localização: Página Configurações (seção "Templates de Mensagem")
+
+8. HISTÓRICO DE ALTERAÇÕES / AUDITORIA
+   - Log de todas as mudanças em agendamentos
+   - Quem alterou, quando alterou, o que foi alterado
+   - Histórico de status e pagamentos
+   - Visualização de histórico por agendamento
+   - Localização: Modal ou seção em ClienteDetalhes
+
+9. MELHORIAS DE UX/UI
+   9.1. Atalhos de Teclado
+       - Ctrl+N: Novo agendamento
+       - Ctrl+K: Busca global
+       - Ctrl+S: Salvar (em formulários)
+       - Esc: Fechar modais
+   
+   9.2. Drag and Drop na Agenda
+       - Arrastar agendamentos para mudar data/horário
+       - Visual feedback durante o arraste
+   
+   9.3. Filtros Rápidos
+       - Filtros salvos/favoritos
+       - Filtros por tags ou categorias
+   
+   9.4. Modo Offline
+       - Funcionalidade básica sem internet
+       - Sincronização automática quando voltar online
+
+10. NOTIFICAÇÕES AVANÇADAS
+    - Notificações por tipo (lembrete, pagamento pendente, novo cliente)
+    - Configuração de horários para não receber notificações
+    - Notificações por email resumidas (diária/semanal)
+    - Notificações push no mobile (quando PWA estiver melhor implementado)
+
+================================================================================
+                         FUNCIONALIDADES FUTURAS
+================================================================================
+
+11. MULTI-USUÁRIO / MULTI-PROFISSIONAL
+    - Múltiplos profissionais na mesma clínica
+    - Permissões por perfil (admin, profissional, recepcionista)
+    - Agendamentos por profissional
+    - Relatórios por profissional
+    - Compartilhamento de clientes entre profissionais
+
+12. INTEGRAÇÃO COM CALENDÁRIOS EXTERNOS
+    - Sincronização com Google Calendar
+    - Sincronização com Outlook
+    - Exportar agenda para iCal
+    - Importar eventos de calendários externos
+
+13. APP MOBILE NATIVO
+    - App React Native ou PWA melhorado
+    - Notificações push nativas
+    - Funcionalidade offline completa
+    - Sincronização em tempo real
+
+14. INTEGRAÇÃO COM SISTEMAS DE PAGAMENTO
+    - Integração com gateways de pagamento (Stripe, Mercado Pago)
+    - Geração de links de pagamento
+    - Controle de pagamentos online
+    - Notificações automáticas de pagamento recebido
+
+15. SISTEMA DE COMISSÕES
+    - Cálculo automático de comissões por profissional
+    - Relatórios de comissões
+    - Histórico de pagamento de comissões
+
+16. GESTÃO DE ESTOQUE (se aplicável)
+    - Controle de produtos/materiais utilizados
+    - Alertas de estoque baixo
+    - Histórico de consumo
+
+17. SISTEMA DE AVALIAÇÕES
+    - Avaliações de clientes sobre atendimentos
+    - Sistema de estrelas ou notas
+    - Comentários e feedback
+    - Relatórios de satisfação
+
+18. MARKETING E COMUNICAÇÃO
+    - Campanhas de marketing por email
+    - Mensagens em massa para clientes
+    - Segmentação de clientes
+    - Aniversários e datas especiais
+
+================================================================================
+                         MELHORIAS TÉCNICAS
+================================================================================
+
+19. PERFORMANCE
+    - Otimização de queries no banco de dados
+    - Cache de dados frequentes
+    - Lazy loading de componentes pesados
+    - Paginação em listas grandes
+
+20. TESTES AUTOMATIZADOS
+    - Testes unitários (Jest/Vitest)
+    - Testes de integração
+    - Testes E2E (Cypress ou Playwright)
+    - Cobertura de código > 80%
+
+21. DOCUMENTAÇÃO
+    - Documentação técnica completa
+    - Guia do usuário
+    - Vídeos tutoriais
+    - FAQ
+
+22. SEGURANÇA
+    - Rate limiting nas APIs
+    - Validação mais rigorosa de inputs
+    - Logs de segurança
+    - Backup automático diário
+
+23. ACESSIBILIDADE
+    - Suporte a leitores de tela
+    - Navegação por teclado completa
+    - Contraste adequado
+    - Textos alternativos em imagens
+
+24. INTERNACIONALIZAÇÃO (i18n)
+    - Suporte a múltiplos idiomas
+    - Português (BR), Inglês, Espanhol
+    - Formatação de datas/números por localidade
+
+================================================================================
+                         OBSERVAÇÕES IMPORTANTES
+================================================================================
+
+✅ JÁ IMPLEMENTADO:
+   - Sistema completo de agendamentos
+   - Gestão de clientes
+   - Controle financeiro
+   - Notificações in-app
+   - Emails automáticos
+   - Exportação completa (Clientes, Agenda, Financeiro, Dashboard, Cliente Detalhes) ✅
+   - Backup e restauração de dados ✅
+   - Busca Global com atalho Ctrl+K/Cmd+K ✅
+   - Anamnese podológica
+   - Configurações de perfil e clínica
+   - Gerenciamento de procedimentos
+   - Tema claro/escuro
+   - Calendário com feriados
+   - Onboarding tour completo
+   - Design responsivo mobile-first
+   - Relatórios básicos (Procedimentos, Clientes, Horários, Dias da Semana)
+   - Gráficos de receitas, procedimentos e ocupação
+
+📋 PRÓXIMOS PASSOS RECOMENDADOS:
+   1. Funcionalidade de importação/restauração de backup (completar ciclo)
+   2. Relatórios avançados (expandir análises existentes)
+   3. Melhorias incrementais baseadas em feedback de usuários
+   4. Testes automatizados (qualidade e confiabilidade)
+
+💡 SUGESTÕES:
+   - Priorizar funcionalidades que agregam mais valor ao usuário
+   - Implementar melhorias incrementais (não tudo de uma vez)
+   - Coletar feedback dos usuários antes de implementar features complexas
+   - Manter foco em funcionalidades core antes de expandir
+
+================================================================================
+                              FIM DO DOCUMENTO
+================================================================================
+
+
+
+

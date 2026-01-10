@@ -8,6 +8,9 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -45,8 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     // Usa variável de ambiente se disponível, senão usa a URL de produção
-    const productionUrl = import.meta.env.VITE_SITE_URL || 'https://mediumturquoise-jackal-808195.hostingersite.com';
-    const redirectUrl = `${productionUrl}/auth`;
+    const siteUrl = import.meta.env.VITE_SITE_URL || 'https://mediumturquoise-jackal-808195.hostingersite.com';
+    const redirectUrl = `${siteUrl}/auth`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -56,6 +59,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: { full_name: fullName }
       }
     });
+    return { error: error as Error | null };
+  };
+
+  const resetPasswordForEmail = async (email: string) => {
+    
+    const siteUrl = import.meta.env.VITE_SITE_URL || 'https://mediumturquoise-jackal-808195.hostingersite.com';
+    const redirectUrl = `${siteUrl}/auth/reset-password`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    });
+    
+    return { error: error as Error | null };
+  };
+
+  const signInWithGoogle = async () => {
+    // Detecta automaticamente se está em localhost ou produção
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const siteUrl = isLocalhost 
+      ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || '8080'}`
+      : (import.meta.env.VITE_SITE_URL || 'https://mediumturquoise-jackal-808195.hostingersite.com');
+    const redirectUrl = `${siteUrl}/auth`;
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+      },
+    });
+    
+    return { error: error as Error | null };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    
     return { error: error as Error | null };
   };
 
@@ -96,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle, resetPasswordForEmail, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );

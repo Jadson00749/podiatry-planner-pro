@@ -5,13 +5,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Agenda from "./pages/Agenda";
 import Clientes from "./pages/Clientes";
 import ClienteDetalhes from "./pages/ClienteDetalhes";
 import Financeiro from "./pages/Financeiro";
+import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
 import Notificacoes from "./pages/Notificacoes";
 import NotFound from "./pages/NotFound";
@@ -26,18 +29,22 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter basename="/">
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
-              <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-              <Route path="/clientes/:id" element={<ProtectedRoute><ClienteDetalhes /></ProtectedRoute>} />
-              <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
-              <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-              <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <OnboardingProvider>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/reset-password" element={<ResetPassword />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
+                <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+                <Route path="/clientes/:id" element={<ProtectedRoute><ClienteDetalhes /></ProtectedRoute>} />
+                <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
+                <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
+                <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+                <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </OnboardingProvider>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

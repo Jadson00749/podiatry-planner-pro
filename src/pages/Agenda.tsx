@@ -19,6 +19,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportAppointments } from '@/utils/exportAppointments';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type ViewMode = 'day' | 'week' | 'month';
 type StatusFilter = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
@@ -33,6 +34,7 @@ export default function Agenda() {
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate);
+  const isMobile = useIsMobile();
 
   // Atualizar currentMonth quando selectedDate mudar
   useEffect(() => {
@@ -557,7 +559,10 @@ export default function Agenda() {
         )}
 
         {viewMode === 'week' && (
-          <div className="grid grid-cols-7 gap-2 auto-rows-[208px]">
+          <div className={cn(
+            "grid grid-cols-7",
+            isMobile ? "gap-0.5 auto-rows-[110px]" : "gap-2 auto-rows-[208px]"
+          )}>
             {weekDays.map((day) => {
               const dateStr = format(day, 'yyyy-MM-dd');
               const dayAppointments = appointments?.filter(a => a.appointment_date === dateStr) || [];
@@ -569,7 +574,8 @@ export default function Agenda() {
                 <div
                   key={dateStr}
                   className={cn(
-                    'p-3 rounded-xl border h-full transition-colors flex flex-col cursor-pointer',
+                    'border h-full transition-colors flex flex-col cursor-pointer',
+                    isMobile ? 'rounded-lg p-1' : 'rounded-xl p-3',
                     isToday ? 'border-primary bg-primary/5' : 'border-border bg-card',
                     isPastDay && 'opacity-60',
                     'hover:border-primary/50'
@@ -579,36 +585,48 @@ export default function Agenda() {
                     setViewMode('day');
                   }}
                 >
-                  <div className="text-center mb-2 flex-shrink-0">
-                    <p className="text-xs text-muted-foreground capitalize">
+                  <div className={cn("text-center flex-shrink-0", isMobile ? "mb-0.5" : "mb-2")}>
+                    <p className={cn(
+                      "text-muted-foreground capitalize",
+                      isMobile ? "text-[9px]" : "text-xs"
+                    )}>
                       {format(day, 'EEE', { locale: ptBR })}
                     </p>
                     <p className={cn(
-                      'text-lg font-semibold',
+                      'font-semibold',
+                      isMobile ? 'text-xs' : 'text-lg',
                       isToday ? 'text-primary' : 'text-foreground',
                       dayHoliday && 'text-destructive'
                     )}>
                       {format(day, 'd')}
                     </p>
                     {dayHoliday && (
-                      <p className="text-xs text-destructive truncate">{dayHoliday.name}</p>
+                      <p className={cn("text-destructive truncate", isMobile ? "text-[8px]" : "text-xs")}>
+                        {dayHoliday.name}
+                      </p>
                     )}
                   </div>
                   
-                  <div className="space-y-1 flex-1 overflow-y-auto">
-                    {dayAppointments.slice(0, 3).map((apt) => (
+                  <div className={cn("flex-1 overflow-y-auto", isMobile ? "space-y-0.5" : "space-y-1")}>
+                    {dayAppointments.slice(0, isMobile ? 2 : 3).map((apt) => (
                       <div
                         key={apt.id}
-                        className="p-2 rounded bg-primary/10 text-xs"
+                        className={cn(
+                          "rounded bg-primary/10",
+                          isMobile ? "p-0.5 text-[8px]" : "p-2 text-xs"
+                        )}
                       >
                         <p className="font-medium text-foreground truncate">
-                          {apt.appointment_time.slice(0, 5)} - {apt.clients?.name}
+                          {isMobile 
+                            ? `${apt.appointment_time.slice(0, 5)} ${apt.clients?.name?.split(' ')[0] || ''}`
+                            : `${apt.appointment_time.slice(0, 5)} - ${apt.clients?.name}`
+                          }
                         </p>
                       </div>
                     ))}
-                    {dayAppointments.length > 3 && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        +{dayAppointments.length - 3} mais
+                    {dayAppointments.length > (isMobile ? 2 : 3) && (
+                      <p className={cn("text-muted-foreground text-center", isMobile ? "text-[8px]" : "text-xs")}>
+                        +{dayAppointments.length - (isMobile ? 2 : 3)} mais
                       </p>
                     )}
                   </div>
@@ -621,16 +639,25 @@ export default function Agenda() {
         {viewMode === 'month' && (
           <>
             {/* Cabeçalho dos dias da semana */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
+            <div className={cn(
+              "grid grid-cols-7 mb-2",
+              isMobile ? "gap-1" : "gap-2"
+            )}>
               {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dayName) => (
-                <div key={dayName} className="text-center text-sm font-semibold text-muted-foreground py-2">
+                <div key={dayName} className={cn(
+                  "text-center font-semibold text-muted-foreground",
+                  isMobile ? "text-[10px] py-1" : "text-sm py-2"
+                )}>
                   {dayName}
                 </div>
               ))}
             </div>
 
             {/* Grid do calendário mensal */}
-            <div className="grid grid-cols-7 gap-2 auto-rows-[208px]">
+            <div className={cn(
+              "grid grid-cols-7",
+              isMobile ? "gap-1 auto-rows-[100px]" : "gap-2 auto-rows-[208px]"
+            )}>
               {monthDays.map((day) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const dayAppointments = filteredAppointments.filter(a => a.appointment_date === dateStr);
@@ -643,7 +670,8 @@ export default function Agenda() {
                   <div
                     key={dateStr}
                     className={cn(
-                      'p-3 rounded-xl border h-full transition-colors flex flex-col cursor-pointer',
+                      'rounded-xl border h-full transition-colors flex flex-col cursor-pointer',
+                      isMobile ? 'p-1' : 'p-3',
                       isToday ? 'border-primary bg-primary/5' : 'border-border bg-card',
                       !isCurrentMonth && 'opacity-40',
                       isPastDay && 'opacity-60',
@@ -654,40 +682,49 @@ export default function Agenda() {
                       setViewMode('day');
                     }}
                   >
-                    <div className="text-center mb-2 flex-shrink-0">
+                    <div className={cn("text-center flex-shrink-0", isMobile ? "mb-0.5" : "mb-2")}>
                       <p className={cn(
-                        'text-xs mb-1',
-                        isCurrentMonth ? 'text-muted-foreground' : 'text-muted-foreground/50',
-                        'capitalize'
+                        'mb-0.5 capitalize',
+                        isMobile ? 'text-[9px]' : 'text-xs mb-1',
+                        isCurrentMonth ? 'text-muted-foreground' : 'text-muted-foreground/50'
                       )}>
                         {format(day, 'EEE', { locale: ptBR })}
                       </p>
                       <p className={cn(
-                        'text-lg font-semibold',
+                        'font-semibold',
+                        isMobile ? 'text-xs' : 'text-lg',
                         isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground',
                         dayHoliday && 'text-destructive'
                       )}>
                         {format(day, 'd')}
                       </p>
                       {dayHoliday && (
-                        <p className="text-xs text-destructive truncate">{dayHoliday.name}</p>
+                        <p className={cn("text-destructive truncate", isMobile ? "text-[8px]" : "text-xs")}>
+                          {dayHoliday.name}
+                        </p>
                       )}
                     </div>
                     
-                    <div className="space-y-1 flex-1 overflow-y-auto">
-                      {dayAppointments.slice(0, 3).map((apt) => (
+                    <div className={cn("flex-1 overflow-y-auto", isMobile ? "space-y-0.5" : "space-y-1")}>
+                      {dayAppointments.slice(0, isMobile ? 1 : 3).map((apt) => (
                         <div
                           key={apt.id}
-                          className="p-2 rounded bg-primary/10 text-xs"
+                          className={cn(
+                            "rounded bg-primary/10",
+                            isMobile ? "p-0.5 text-[8px]" : "p-2 text-xs"
+                          )}
                         >
                           <p className="font-medium text-foreground truncate">
-                            {apt.appointment_time.slice(0, 5)} - {apt.clients?.name}
+                            {isMobile 
+                              ? `${apt.appointment_time.slice(0, 5)} ${apt.clients?.name?.split(' ')[0] || ''}`
+                              : `${apt.appointment_time.slice(0, 5)} - ${apt.clients?.name}`
+                            }
                           </p>
                         </div>
                       ))}
-                      {dayAppointments.length > 3 && (
-                        <p className="text-xs text-muted-foreground text-center">
-                          +{dayAppointments.length - 3} mais
+                      {dayAppointments.length > (isMobile ? 1 : 3) && (
+                        <p className={cn("text-muted-foreground text-center", isMobile ? "text-[8px]" : "text-xs")}>
+                          +{dayAppointments.length - (isMobile ? 1 : 3)} mais
                         </p>
                       )}
                     </div>

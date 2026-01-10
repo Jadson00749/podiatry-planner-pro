@@ -1,28 +1,70 @@
-import { useState } from 'react';
-import { format } from 'date-fns';
+import { useState, useMemo } from 'react';
+import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Users, DollarSign, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Users, DollarSign, Clock, TrendingUp, AlertCircle, Download, FileSpreadsheet, FileType } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { AppLayout } from '@/components/AppLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Calendar } from '@/components/ui/calendar';
 import { AppointmentCard } from '@/components/dashboard/AppointmentCard';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppointments, useTodayStats, useMonthStats, useUpdateAppointment } from '@/hooks/useAppointments';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useClients } from '@/hooks/useClients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { getHolidaysForMonth } from '@/lib/holidays';
 import { isHolidayDate, disablePastDates } from '@/lib/calendar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { exportDashboard } from '@/utils/exportDashboard';
+import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isMobile = useIsMobile();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: todayAppointments, isLoading: appointmentsLoading } = useAppointments(today);
+  const { data: allAppointments } = useAppointments();
   const { data: todayStats } = useTodayStats();
   const { data: monthStats } = useMonthStats();
   const { data: clients } = useClients();
   const updateAppointment = useUpdateAppointment();
+  const { toast } = useToast();
+
+  // Dados para gráfico de receitas (últimos 6 meses)
+  const revenueChartData = useMemo(() => {
+    if (!allAppointments) return [];
+
+    const now = new Date();
+    const sixMonthsAgo = subMonths(now, 5);
+    const months = eachMonthOfInterval({
+      start: startOfMonth(sixMonthsAgo),
+      end: endOfMonth(now),
+    });
+
+    return months.map((month) => {
+      const monthStart = format(startOfMonth(month), 'yyyy-MM-dd');
+      const monthEnd = format(endOfMonth(month), 'yyyy-MM-dd');
+      
+      const monthAppointments = allAppointments.filter((apt) => {
+        const aptDate = apt.appointment_date;
+        return aptDate >= monthStart && aptDate <= monthEnd && apt.payment_status === 'paid';
+      });
+
+      const revenue = monthAppointments.reduce((sum, apt) => sum + Number(apt.price || 0), 0);
+
+      return {
+        mes: format(month, 'MMM/yyyy', { locale: ptBR }),
+        receita: Number(revenue.toFixed(2)),
+      };
+    });
+  }, [allAppointments]);
 
   const appointmentDates = todayAppointments?.map(a => a.appointment_date) || [];
   
@@ -58,7 +100,36 @@ export default function Dashboard() {
     updateAppointment.mutate({ id, payment_status });
   };
 
-  if (profileLoading) {
+  const handleExport = (format: 'excel' | 'pdf') => {
+    try {
+      exportDashboard({
+        format,
+        stats: {
+          todayStats,
+          monthStats,
+          totalClients: clients?.length,
+          profileName: profile?.full_name,
+        },
+      });
+
+      toast({
+        title: 'Exportação realizada!',
+        description: 'Relatório do dashboard exportado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao exportar dashboard:', error);
+      toast({
+        title: 'Erro na exportação',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao exportar o dashboard.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Verificar se todos os dados necessários carregaram
+  const isDataLoading = profileLoading || appointmentsLoading;
+
+  if (isDataLoading) {
     return (
       <AppLayout>
         <div className="space-y-6">
@@ -84,12 +155,44 @@ export default function Dashboard() {
               {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
             </p>
           </div>
-          <button
-            onClick={() => navigate('/agenda')}
-            className="px-4 py-2 rounded-lg gradient-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
-          >
-            + Novo Agendamento
-          </button>
+        </div>
+
+        {/* Onboarding Checklist - Só aparece após tudo carregar */}
+        {!isDataLoading && <OnboardingChecklist />}
+
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem 
+                  onClick={() => handleExport('excel')}
+                  className="cursor-pointer"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                  Exportar como Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleExport('pdf')}
+                  className="cursor-pointer"
+                >
+                  <FileType className="h-4 w-4 mr-2 text-red-600" />
+                  Exportar como PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button
+              onClick={() => navigate('/agenda')}
+              className="px-4 py-2 rounded-lg gradient-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+            >
+              + Novo Agendamento
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -144,6 +247,71 @@ export default function Dashboard() {
             variant="warning"
           />
         </div>
+
+        {/* Gráfico de Receitas (últimos 6 meses) */}
+        {revenueChartData.length > 0 && revenueChartData.some(d => d.receita > 0) && (
+          <div className="rounded-xl bg-card border border-border p-3 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Receitas - Últimos 6 Meses</h2>
+            <div className={cn("w-full", isMobile ? "h-[200px]" : "h-[300px]")}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart 
+                  data={revenueChartData} 
+                  margin={isMobile 
+                    ? { top: 5, right: 5, left: -15, bottom: 20 } 
+                    : { top: 5, right: 10, left: 0, bottom: 5 }
+                  }
+                >
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeOpacity={0.2}
+                  />
+                  <XAxis 
+                    dataKey="mes" 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: isMobile ? 10 : 12 }}
+                    tickLine={{ stroke: 'hsl(var(--border))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <YAxis 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: isMobile ? 10 : 12 }}
+                    tickLine={{ stroke: 'hsl(var(--border))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickFormatter={(value) => {
+                      if (isMobile) {
+                        // No mobile, mostrar valores mais compactos
+                        if (value >= 1000) return `R$${(value / 1000).toFixed(0)}k`;
+                        return `R$${value}`;
+                      }
+                      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+                    }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      padding: isMobile ? '6px' : '8px',
+                      fontSize: isMobile ? '11px' : '12px',
+                    }}
+                    formatter={(value: number) => [
+                      `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                      'Receita'
+                    ]}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="receita" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={isMobile ? 2 : 3}
+                    dot={{ fill: 'hsl(var(--primary))', r: isMobile ? 3 : 5 }}
+                    activeDot={{ r: isMobile ? 5 : 7 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="flex flex-col sm:flex-row gap-4 lg:gap-6 w-full">

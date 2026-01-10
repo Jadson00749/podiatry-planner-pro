@@ -7,6 +7,7 @@ export interface Profile {
   user_id: string;
   full_name: string;
   phone: string | null;
+  avatar_url: string | null;
   clinic_name: string | null;
   clinic_email: string | null;
   clinic_address: string | null;
@@ -14,6 +15,7 @@ export interface Profile {
   clinic_website: string | null;
   clinic_instagram: string | null;
   clinic_facebook: string | null;
+  clinic_logo_url: string | null;
   working_hours_start: string | null;
   working_hours_end: string | null;
   appointment_duration: number | null;
@@ -22,6 +24,7 @@ export interface Profile {
   email_notifications_enabled: boolean | null;
   reminder_hours_before: number[] | null;
   email_template: string | null;
+  onboarding_completed: boolean | null;
   created_at: string;
   updated_at: string;
 }

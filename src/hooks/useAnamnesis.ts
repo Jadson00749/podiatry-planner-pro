@@ -36,6 +36,7 @@ export function useAnamnesis(clientId: string) {
     queryFn: async () => {
       if (!profile?.id || !clientId) return null;
       
+      // @ts-ignore - anamnesis table exists but not in Supabase types
       const { data, error } = await supabase
         .from('anamnesis')
         .select('*')
@@ -58,6 +59,7 @@ export function useCreateAnamnesis() {
     mutationFn: async (anamnesis: Omit<Anamnesis, 'id' | 'profile_id' | 'created_at' | 'updated_at'>) => {
       if (!profile?.id) throw new Error('Profile not found');
 
+      // @ts-ignore - anamnesis table exists but not in Supabase types
       const { data, error } = await supabase
         .from('anamnesis')
         .insert({ ...anamnesis, profile_id: profile.id })
@@ -78,6 +80,7 @@ export function useUpdateAnamnesis() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Anamnesis> & { id: string }) => {
+      // @ts-ignore - anamnesis table exists but not in Supabase types
       const { data, error } = await supabase
         .from('anamnesis')
         .update({ ...updates, updated_at: new Date().toISOString() })
@@ -93,6 +96,29 @@ export function useUpdateAnamnesis() {
     },
   });
 }
+
+export function useAllAnamnesis() {
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['all-anamnesis', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return [];
+      
+      // @ts-ignore - anamnesis table exists but not in Supabase types
+      const { data, error } = await supabase
+        .from('anamnesis')
+        .select('*')
+        .eq('profile_id', profile.id);
+
+      if (error) throw error;
+      return (data || []) as Anamnesis[];
+    },
+    enabled: !!profile?.id,
+  });
+}
+
+
 
 
 

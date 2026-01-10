@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { format, setHours, setMinutes, addMinutes, isBefore, isToday, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, CalendarIcon } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getHolidaysForMonth } from '@/lib/holidays';
 import { isHolidayDate, disablePastDates, disableNonWorkingDays } from '@/lib/calendar';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { useClients, useCreateClient } from '@/hooks/useClients';
-import { useProcedures } from '@/hooks/useProcedures';
+import { useProcedures, useCreateProcedure } from '@/hooks/useProcedures';
 import { useCreateAppointment, useAppointments } from '@/hooks/useAppointments';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
@@ -45,8 +46,15 @@ const newClientSchema = z.object({
   whatsapp: z.string().optional(),
 });
 
+const newProcedureSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
+  default_price: z.string().min(1, 'Informe o preço'),
+  duration_minutes: z.string().optional(),
+});
+
 type AppointmentFormData = z.infer<typeof appointmentSchema>;
 type NewClientFormData = z.infer<typeof newClientSchema>;
+type NewProcedureFormData = z.infer<typeof newProcedureSchema>;
 
 interface NewAppointmentFormProps {
   defaultDate?: string;
@@ -55,15 +63,18 @@ interface NewAppointmentFormProps {
 
 export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFormProps) {
   const [isNewClient, setIsNewClient] = useState(false);
+  const [isNewProcedure, setIsNewProcedure] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(defaultDate ? new Date(defaultDate) : new Date());
+  const isMobile = useIsMobile();
   const { data: clients } = useClients();
   const { data: procedures } = useProcedures();
   const { data: profile } = useProfile();
   const { data: allAppointments } = useAppointments();
   const createAppointment = useCreateAppointment();
   const createClient = useCreateClient();
+  const createProcedure = useCreateProcedure();
   const { toast } = useToast();
 
   const appointmentForm = useForm<AppointmentFormData>({
@@ -79,6 +90,11 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
   const clientForm = useForm<NewClientFormData>({
     resolver: zodResolver(newClientSchema),
     defaultValues: { name: '', phone: '', whatsapp: '' },
+  });
+
+  const procedureForm = useForm<NewProcedureFormData>({
+    resolver: zodResolver(newProcedureSchema),
+    defaultValues: { name: '', default_price: '', duration_minutes: '' },
   });
 
   const handleProcedureChange = (procedureId: string) => {
@@ -115,6 +131,7 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
     
     try {
       let clientId = data.client_id;
+      let procedureId = data.procedure_id;
 
       // If new client, create first  
       if (isNewClient) {
@@ -130,9 +147,25 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
         clientId = newClient.id;
       }
 
+      // If new procedure, create first
+      if (isNewProcedure) {
+        const procedureData = procedureForm.getValues();
+        const price = parseFloat(procedureData.default_price) || 0;
+        const duration = procedureData.duration_minutes ? parseInt(procedureData.duration_minutes) : null;
+        const newProcedure = await createProcedure.mutateAsync({
+          name: procedureData.name,
+          default_price: price,
+          duration_minutes: duration,
+          description: null,
+        });
+        procedureId = newProcedure.id;
+        // Atualizar o preço no formulário com o preço do novo procedimento
+        appointmentForm.setValue('price', price.toString());
+      }
+
       await createAppointment.mutateAsync({
         client_id: clientId,
-        procedure_id: data.procedure_id || null,
+        procedure_id: procedureId || data.procedure_id || null,
         appointment_date: data.appointment_date,
         appointment_time: data.appointment_time,
         price: parseFloat(data.price),
@@ -351,19 +384,73 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
 
       {/* Procedure */}
       <div className="space-y-2">
-        <Label>Procedimento (opcional)</Label>
-        <Select onValueChange={handleProcedureChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione um procedimento" />
-          </SelectTrigger>
-          <SelectContent>
-            {procedures?.map((procedure) => (
-              <SelectItem key={procedure.id} value={procedure.id}>
-                {procedure.name} - R$ {procedure.default_price.toFixed(2)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center justify-between">
+          <Label>Procedimento (opcional)</Label>
+          <button
+            type="button"
+            onClick={() => setIsNewProcedure(!isNewProcedure)}
+            className="text-xs text-primary hover:underline"
+          >
+            {isNewProcedure ? 'Selecionar existente' : 'Novo procedimento'}
+          </button>
+        </div>
+
+        {isNewProcedure ? (
+          <div className="space-y-3 p-3 rounded-lg bg-muted">
+            <div>
+              <Input
+                placeholder="Nome do procedimento"
+                {...procedureForm.register('name')}
+              />
+              {procedureForm.formState.errors.name && (
+                <p className="text-xs text-destructive mt-1">
+                  {procedureForm.formState.errors.name.message}
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Input
+                  type="text"
+                  placeholder="Preço (R$ 0,00)"
+                  value={procedureForm.watch('default_price') ? formatCurrencyDisplay(procedureForm.watch('default_price')) : ''}
+                  onChange={(e) => {
+                    const numericValue = parseCurrencyInput(e.target.value);
+                    procedureForm.setValue('default_price', numericValue, { shouldValidate: true });
+                  }}
+                />
+                {procedureForm.formState.errors.default_price && (
+                  <p className="text-xs text-destructive mt-1">
+                    {procedureForm.formState.errors.default_price.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Input
+                  type="number"
+                  placeholder="Duração (min)"
+                  min="15"
+                  step="15"
+                  {...procedureForm.register('duration_minutes')}
+                  className="[&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Select onValueChange={handleProcedureChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione um procedimento" />
+            </SelectTrigger>
+            <SelectContent>
+              {procedures?.map((procedure) => (
+                <SelectItem key={procedure.id} value={procedure.id}>
+                  {procedure.name} - R$ {procedure.default_price.toFixed(2)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Date and Time */}
@@ -379,15 +466,20 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
                   !selectedDate && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
+                <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                 {selectedDate ? (
-                  format(selectedDate, "PPP", { locale: ptBR })
+                  <span className="truncate">
+                    {isMobile 
+                      ? format(selectedDate, "d MMM yyyy", { locale: ptBR })
+                      : format(selectedDate, "PPP", { locale: ptBR })
+                    }
+                  </span>
                 ) : (
                   <span>Selecione uma data</span>
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0 min-w-[280px] sm:min-w-[320px]" align="start">
               <div className="p-3">
                 <Calendar
                   mode="single"
@@ -487,7 +579,7 @@ export function NewAppointmentForm({ defaultDate, onSuccess }: NewAppointmentFor
                           Passado
                         </Badge>
                       ) : (
-                        <Badge variant="default" className="text-xs bg-success/10 text-success border-success/20 shrink-0 ml-2">
+                        <Badge variant="default" className="text-xs bg-primary/10 text-primary border-primary/20 shrink-0 ml-2">
                           Livre
                         </Badge>
                       )}
