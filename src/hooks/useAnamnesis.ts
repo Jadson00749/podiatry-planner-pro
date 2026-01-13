@@ -17,7 +17,7 @@ export interface Anamnesis {
   uses_continuous_medication: boolean;
   has_allergies: boolean;
   is_pregnant: boolean;
-  // Avaliação Podológica
+  // Avaliação Clínica
   skin_type: string | null; // seca / normal / úmida
   sensitivity: string | null; // normal / reduzida / aumentada
   nail_condition: string | null;

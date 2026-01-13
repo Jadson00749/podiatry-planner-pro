@@ -13,3 +13,5 @@ COMMENT ON COLUMN public.profiles.clinic_logo_url IS 'URL do logo da clínica';
 
 
 
+
+

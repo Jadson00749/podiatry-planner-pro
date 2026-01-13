@@ -25,6 +25,13 @@ export interface Profile {
   reminder_hours_before: number[] | null;
   email_template: string | null;
   onboarding_completed: boolean | null;
+  subscription_plan: 'basic' | 'professional' | 'premium' | null;
+  trial_ends_at: string | null;
+  subscription_expires_at: string | null;
+  export_count: number | null;
+  export_limit: number | null;
+  max_clients: number | null;
+  max_procedures: number | null;
   created_at: string;
   updated_at: string;
 }

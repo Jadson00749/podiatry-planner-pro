@@ -55,23 +55,90 @@ export function AppointmentCard({
 
   if (compact) {
     return (
-      <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:shadow-md transition-shadow">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="w-5 h-5 text-primary" />
+      <div className="p-2.5 sm:p-3 rounded-lg bg-card border border-border hover:shadow-md transition-shadow w-full max-w-full overflow-hidden">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <p className="font-medium text-sm text-foreground truncate">
+                {appointment.clients?.name || 'Sem nome'}
+              </p>
+              {appointment.procedures?.name && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {appointment.procedures.name}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="font-medium text-sm text-foreground">
-              {appointment.clients?.name}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {appointment.appointment_time.slice(0, 5)}
-            </p>
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <Badge className={cn('text-xs px-1.5 py-0 whitespace-nowrap', status.bg)}>
+              {status.label}
+            </Badge>
+            <Badge className={cn('text-xs px-1.5 py-0 whitespace-nowrap', payment.bg)}>
+              {payment.label}
+            </Badge>
           </div>
         </div>
-        <Badge className={cn('text-xs', status.bg)}>
-          {status.label}
-        </Badge>
+        
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground mb-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Clock className="w-3 h-3 flex-shrink-0" />
+            <span className="whitespace-nowrap">{appointment.appointment_time.slice(0, 5)}</span>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <DollarSign className="w-3 h-3 flex-shrink-0" />
+            <span className="whitespace-nowrap">R$ {Number(appointment.price).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {appointment.status === 'scheduled' && onStatusChange && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs h-7 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+                onClick={() => onStatusChange(appointment.id, 'completed')}
+              >
+                Concluir
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs h-7 px-2 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => onStatusChange(appointment.id, 'cancelled')}
+              >
+                Cancelar
+              </Button>
+            </>
+          )}
+          
+          {appointment.payment_status === 'pending' && appointment.status === 'completed' && onPaymentChange && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs h-7 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+              onClick={() => onPaymentChange(appointment.id, 'paid')}
+            >
+              Pago
+            </Button>
+          )}
+
+          {(appointment.clients?.whatsapp || appointment.clients?.phone) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleWhatsAppReminder}
+              className="text-xs h-7 px-2 flex-shrink-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 border-green-300 dark:border-green-700"
+              title="Enviar mensagem via WhatsApp"
+            >
+              <MessageCircle className="w-3 h-3 mr-1" />
+              WhatsApp
+            </Button>
+          )}
+        </div>
       </div>
     );
   }

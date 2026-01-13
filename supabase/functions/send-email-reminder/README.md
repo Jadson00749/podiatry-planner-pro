@@ -117,3 +117,5 @@ curl -X POST https://seu-projeto.supabase.co/functions/v1/send-email-reminder \
 
 
 
+
+

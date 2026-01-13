@@ -16,3 +16,5 @@ COMMENT ON COLUMN public.profiles.working_days IS 'Array de dias da semana em qu
 
 
 
+
+

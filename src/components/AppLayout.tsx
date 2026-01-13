@@ -11,19 +11,25 @@ import {
   X,
   LogOut,
   Footprints,
-  Search
+  Search,
+  Crown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { usePlan } from '@/hooks/usePlan';
 import { useOnboarding } from '@/contexts/OnboardingContext';
+import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { NotificationBell } from './NotificationBell';
 import { GlobalSearch } from './GlobalSearch';
 import { OnboardingTour } from './onboarding/OnboardingTour';
+import { useInactivityLogout } from '@/hooks/useInactivityLogout';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 // Notificações push desativadas - não funcionam bem no mobile
 // import { usePushNotifications } from '@/hooks/usePushNotifications';
 // import { PushNotificationPrompt } from './PushNotificationPrompt';
@@ -36,17 +42,52 @@ const navItems = [
   { path: '/financeiro', label: 'Financeiro', icon: DollarSign },
   { path: '/relatorios', label: 'Relatórios', icon: FileText },
   { path: '/configuracoes', label: 'Configurações', icon: Settings },
+  { path: '/planos', label: 'Planos', icon: Crown },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut } = useAuth();
   const { data: profile } = useProfile();
+  const { plan, isTrial, trialDaysLeft } = usePlan();
   const { tourKey, isActive: isTourActive, currentStep } = useOnboarding();
+  const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpenedForTour, setSidebarOpenedForTour] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  // Verificar preferência "Lembrar-me" do localStorage
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('remember_me_preference') === 'true';
+  });
+
+  // Monitorar mudanças na preferência "Lembrar-me"
+  useEffect(() => {
+    const checkRememberMe = () => {
+      const preference = localStorage.getItem('remember_me_preference') === 'true';
+      setRememberMe(preference);
+    };
+
+    // Verificar a cada segundo
+    const interval = setInterval(checkRememberMe, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Logout por inatividade (habilitado apenas se "Lembrar-me" NÃO estiver marcado)
+  const { showWarning, timeRemaining, handleContinue, handleLogout: handleInactivityLogout } = useInactivityLogout({
+    enabled: !rememberMe, // Habilitado apenas se NÃO marcou "Lembrar-me"
+    inactivityTimeout: 2 * 60 * 60 * 1000, // 2 horas
+    warningTimeout: 60 * 1000, // 1 minuto de aviso
+    onLogout: () => {
+      toast({
+        title: 'Sessão expirada',
+        description: 'Você foi desconectado por inatividade. Faça login novamente.',
+        duration: 5000,
+      });
+    },
+  });
   
   // Manter sidebar aberto durante todo o tour no mobile
   useEffect(() => {
@@ -84,8 +125,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isTourActive, currentStep, sidebarOpenedForTour, mobileOpen]);
   
-  // Notificações push desativadas
-  // usePushNotifications();
 
   const NavContent = () => (
     <nav className="flex flex-col h-full">
@@ -108,7 +147,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {profile?.clinic_name || 'PodoAgenda'}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {profile?.clinic_name ? 'Gestão Podológica' : 'Gestão Podológica'}
+              {profile?.clinic_name ? 'Gestão Clínica' : 'Gestão Clínica'}
             </p>
           </div>
         </Link>
@@ -119,6 +158,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const navId = `nav-${item.path.replace('/', '') || 'dashboard'}`;
+          const isPlanos = item.path === '/planos';
+          
           return (
             <Link
               key={item.path}
@@ -126,14 +167,34 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               to={item.path}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
+                'flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200',
                 isActive
                   ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-md'
                   : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
               )}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <item.icon className="w-5 h-5 shrink-0" />
+                <span className="font-medium truncate">{item.label}</span>
+              </div>
+              {isPlanos && (
+                <Badge 
+                  variant={isTrial ? "default" : "outline"} 
+                  className={cn(
+                    "shrink-0 text-xs font-medium",
+                    isTrial && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  {isTrial 
+                    ? `Trial: ${trialDaysLeft}d` 
+                    : plan === 'premium' 
+                      ? 'Premium' 
+                      : plan === 'professional' 
+                        ? 'Pro' 
+                        : 'Básico'
+                  }
+                </Badge>
+              )}
             </Link>
           );
         })}
@@ -160,7 +221,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {profile?.full_name || 'Usuário'}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {profile?.clinic_name || 'Podologia'}
+              {profile?.clinic_name || 'Clínica'}
             </p>
           </div>
         </div>
@@ -281,6 +342,46 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Modal de Aviso de Inatividade */}
+      <Dialog open={showWarning} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">⏰</span>
+              Você está inativo
+            </DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Você ficou inativo por 2 horas. Por segurança, você será desconectado automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="text-center space-y-2">
+              <p className="text-3xl font-bold text-primary">
+                {timeRemaining}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Tempo restante antes do logout automático
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              onClick={handleContinue}
+              className="w-full sm:w-auto gradient-primary"
+            >
+              Continuar usando
+            </Button>
+            <Button
+              onClick={handleInactivityLogout}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              Fazer logout agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Main Content */}
       <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen flex flex-col">
         {/* Notificações push desativadas */}
@@ -294,9 +395,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
           <div className="p-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Desenvolvido com 💙 por{' '}
-              <span className="font-semibold text-foreground">Jadson Santos</span>
-              {' '}&copy; {new Date().getFullYear()}
+              &copy; {new Date().getFullYear()} | JL Santos Suporte e Consultoria em Sistema de Informação LTDA
             </p>
           </div>
         </footer>

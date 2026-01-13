@@ -24,6 +24,9 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportClientDetails } from '@/utils/exportClientDetails';
+import { usePlan } from '@/hooks/usePlan';
+import { useUpdateProfile } from '@/hooks/useProfile';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 export default function ClienteDetalhes() {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +40,14 @@ export default function ClienteDetalhes() {
   const updateAppointment = useUpdateAppointment();
   const updateClient = useUpdateClient();
   const { toast } = useToast();
+  const updateProfile = useUpdateProfile();
+  const { 
+    canUseAnamnesis, 
+    canExport, 
+    exportCount, 
+    exportLimit, 
+    isTrial 
+  } = usePlan();
   
   const client = clients?.find(c => c.id === id);
   const [activeTab, setActiveTab] = useState('dados');
@@ -321,7 +332,22 @@ export default function ClienteDetalhes() {
     }
   };
 
-  const handleExport = (format: 'excel' | 'pdf') => {
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    // Verificar se pode exportar
+    if (!canExport()) {
+      toast({
+        title: 'Limite de exportações atingido',
+        description: `Você usou ${exportCount}/${exportLimit === -1 ? '∞' : exportLimit} exportações. Faça upgrade para exportações ilimitadas.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => navigate('/planos')}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
     try {
       if (!client) {
         toast({
@@ -338,6 +364,13 @@ export default function ClienteDetalhes() {
         appointments: appointments || [],
         anamnesis: anamnesis || null,
       });
+
+      // Incrementar contador de exportações (se não for trial e não for ilimitado)
+      if (!isTrial && exportLimit !== -1) {
+        await updateProfile.mutateAsync({
+          export_count: (exportCount || 0) + 1,
+        });
+      }
 
       toast({
         title: 'Exportação realizada!',
@@ -688,6 +721,13 @@ export default function ClienteDetalhes() {
 
           {/* Tab: Anamnese */}
           <TabsContent value="anamnese" className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+            {!canUseAnamnesis() ? (
+              <UpgradePrompt 
+                feature="Anamnese do Paciente" 
+                requiredPlan="professional"
+              />
+            ) : (
+              <>
             {/* Status da Anamnese */}
             <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
               <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-5">Status da Anamnese</h3>
@@ -829,9 +869,9 @@ export default function ClienteDetalhes() {
                   </div>
                 </div>
 
-                {/* Avaliação Podológica */}
+                {/* Avaliação Clínica */}
                 <div className="rounded-xl bg-card border border-border p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Avaliação Podológica</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Avaliação Clínica</h3>
                   <div className="space-y-4">
                     <div>
                       <Label>Tipo de pele</Label>
@@ -943,6 +983,8 @@ export default function ClienteDetalhes() {
                     </Button>
                   </div>
                 )}
+              </>
+            )}
               </>
             )}
           </TabsContent>

@@ -7,3 +7,5 @@ ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
 -- Comentário
 COMMENT ON COLUMN profiles.onboarding_completed IS 'Indica se o usuário completou o tutorial de onboarding';
 
+
+

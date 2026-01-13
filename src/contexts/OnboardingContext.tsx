@@ -80,7 +80,7 @@ function OnboardingProviderInner({ children }: { children: ReactNode }) {
     try {
       navigate(path);
     } catch (error) {
-      console.error('Erro ao navegar:', error);
+      // Erro silencioso - fallback para window.location
       window.location.href = path;
     }
   };

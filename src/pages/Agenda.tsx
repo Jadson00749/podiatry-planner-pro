@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, addDays, addMonths, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, isWithinInterval, isSameMonth, isPast, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, X, Download, FileSpreadsheet, FileType } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, X, Download, FileSpreadsheet, FileType, List, Grid3x3, LayoutGrid } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { AppointmentCard } from '@/components/dashboard/AppointmentCard';
@@ -20,21 +20,36 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { exportAppointments } from '@/utils/exportAppointments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePlan } from '@/hooks/usePlan';
+import { useUpdateProfile } from '@/hooks/useProfile';
 
 type ViewMode = 'day' | 'week' | 'month';
 type StatusFilter = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
 type PaymentFilter = 'pending' | 'paid' | 'partial';
+type CardLayout = 'list' | 'grid-2' | 'grid-3';
 
 export default function Agenda() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { canExport, exportCount, exportLimit, isTrial } = usePlan();
+  const updateProfile = useUpdateProfile();
   const dateParam = searchParams.get('date');
   const [selectedDate, setSelectedDate] = useState(dateParam ? parseISO(dateParam) : new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const [cardLayout, setCardLayout] = useState<CardLayout>(() => {
+    // Carregar preferência salva ou usar 'list' como padrão
+    const saved = localStorage.getItem('agenda_card_layout');
+    return (saved as CardLayout) || 'list';
+  });
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate);
   const isMobile = useIsMobile();
+
+  // Salvar preferência de layout
+  useEffect(() => {
+    localStorage.setItem('agenda_card_layout', cardLayout);
+  }, [cardLayout]);
 
   // Atualizar currentMonth quando selectedDate mudar
   useEffect(() => {
@@ -172,7 +187,22 @@ export default function Agenda() {
 
   const hasActiveFilters = statusFilters.length > 0 || paymentFilters.length > 0;
 
-  const handleExport = (format: 'excel' | 'pdf') => {
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    // Verificar se pode exportar
+    if (!canExport()) {
+      toast({
+        title: 'Limite de exportações atingido',
+        description: `Você usou ${exportCount}/${exportLimit === -1 ? '∞' : exportLimit} exportações. Faça upgrade para exportações ilimitadas.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => navigate('/planos')}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
     try {
       if (!appointments || appointments.length === 0) {
         toast({
@@ -205,12 +235,18 @@ export default function Agenda() {
         endDate,
       });
 
+      // Incrementar contador de exportações (se não for trial e não for ilimitado)
+      if (!isTrial && exportLimit !== -1) {
+        await updateProfile.mutateAsync({
+          export_count: (exportCount || 0) + 1,
+        });
+      }
+
       toast({
         title: 'Exportação realizada!',
         description: `${appointmentsToExport.length} agendamento(s) exportado(s) com sucesso.`,
       });
     } catch (error) {
-      console.error('Erro ao exportar agendamentos:', error);
       toast({
         title: 'Erro na exportação',
         description: error instanceof Error ? error.message : 'Ocorreu um erro ao exportar os agendamentos.',
@@ -284,10 +320,10 @@ export default function Agenda() {
 
         {/* Controls */}
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-card border border-border">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border">
             {/* Date Navigation */}
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="icon" onClick={() => navigateDate('prev')} className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
@@ -296,12 +332,12 @@ export default function Agenda() {
                   <Button
                     variant="outline"
                     className={cn(
-                      "text-center min-w-[200px] h-auto py-2 px-4 font-semibold hover:bg-accent"
+                      "text-center h-auto py-2 px-3 sm:px-4 font-semibold hover:bg-accent text-xs sm:text-sm w-full sm:w-auto sm:min-w-[220px]"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <CalendarIcon className="h-4 w-4" />
-                      <span className="font-semibold text-foreground capitalize">
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="font-semibold text-foreground capitalize truncate">
                         {viewMode === 'day' && format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
                         {viewMode === 'week' && `Semana de ${format(weekDays[0], 'd MMM', { locale: ptBR })} - ${format(weekDays[6], 'd MMM', { locale: ptBR })}`}
                         {viewMode === 'month' && format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
@@ -354,7 +390,7 @@ export default function Agenda() {
                 </PopoverContent>
               </Popover>
               
-              <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
+              <Button variant="outline" size="icon" onClick={() => navigateDate('next')} className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -380,8 +416,50 @@ export default function Agenda() {
             </div>
           </div>
 
-          {/* Filter */}
+          {/* Layout Toggle (apenas desktop) e Filter */}
           <div className="flex items-center gap-2">
+            {/* Layout Toggle - apenas desktop e quando há agendamentos */}
+            {!isMobile && filteredAppointments.length > 0 && viewMode === 'day' && (
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border border-border">
+                <Button
+                  variant={cardLayout === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCardLayout('list')}
+                  className={cn(
+                    "h-8 px-3",
+                    cardLayout === 'list' && "bg-background shadow-sm"
+                  )}
+                  title="Visualização em lista (1 por linha)"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={cardLayout === 'grid-2' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCardLayout('grid-2')}
+                  className={cn(
+                    "h-8 px-3",
+                    cardLayout === 'grid-2' && "bg-background shadow-sm"
+                  )}
+                  title="Visualização em grade (2 por linha)"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={cardLayout === 'grid-3' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCardLayout('grid-3')}
+                  className={cn(
+                    "h-8 px-3",
+                    cardLayout === 'grid-3' && "bg-background shadow-sm"
+                  )}
+                  title="Visualização em grade (3 por linha)"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
             <Popover>
               <PopoverTrigger asChild>
                 <Button 
@@ -529,7 +607,7 @@ export default function Agenda() {
 
         {/* Content */}
         {viewMode === 'day' && (
-          <div className="space-y-2">
+          <>
             {filteredAppointments.length === 0 ? (
               <div className="p-8 rounded-xl bg-card border border-border text-center">
                 <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
@@ -544,18 +622,30 @@ export default function Agenda() {
                 )}
               </div>
             ) : (
-              filteredAppointments
-                .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
-                .map((appointment) => (
-                  <AppointmentCard
-                    key={appointment.id}
-                    appointment={appointment}
-                    onStatusChange={handleStatusChange}
-                    onPaymentChange={handlePaymentChange}
-                  />
-                ))
+              <div className={cn(
+                // Lista (padrão)
+                cardLayout === 'list' && !isMobile && "space-y-2",
+                // Grid 2 colunas (apenas desktop)
+                cardLayout === 'grid-2' && !isMobile && "grid grid-cols-1 lg:grid-cols-2 gap-4",
+                // Grid 3 colunas (apenas desktop)
+                cardLayout === 'grid-3' && !isMobile && "grid grid-cols-1 lg:grid-cols-3 gap-4",
+                // Mobile: lista compacta com menos espaçamento e overflow controlado
+                isMobile && "space-y-1.5 w-full overflow-x-hidden"
+              )}>
+                {filteredAppointments
+                  .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
+                  .map((appointment) => (
+                    <AppointmentCard
+                      key={appointment.id}
+                      appointment={appointment}
+                      onStatusChange={handleStatusChange}
+                      onPaymentChange={handlePaymentChange}
+                      compact={isMobile} // Mobile usa modo compacto
+                    />
+                  ))}
+              </div>
             )}
-          </div>
+          </>
         )}
 
         {viewMode === 'week' && (

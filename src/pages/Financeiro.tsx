@@ -14,13 +14,17 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Toolti
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportFinancial } from '@/utils/exportFinancial';
+import { usePlan } from '@/hooks/usePlan';
+import { useUpdateProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 type PeriodOption = 'current-month' | 'last-month' | 'last-3-months' | 'last-6-months' | 'current-year' | 'last-year' | 'custom';
 
 export default function Financeiro() {
+  const navigate = useNavigate();
   const { data: appointments } = useAppointments();
   const { data: procedures } = useProcedures();
   const { theme } = useTheme();
@@ -123,7 +127,25 @@ export default function Financeiro() {
     updateAppointment.mutate({ id, payment_status: 'paid' });
   };
 
-  const handleExport = (format: 'excel' | 'pdf') => {
+  const { canExport, exportCount, exportLimit, isTrial } = usePlan();
+  const updateProfile = useUpdateProfile();
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    // Verificar se pode exportar
+    if (!canExport()) {
+      toast({
+        title: 'Limite de exportações atingido',
+        description: `Você usou ${exportCount}/${exportLimit === -1 ? '∞' : exportLimit} exportações. Faça upgrade para exportações ilimitadas.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => navigate('/planos')}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
     try {
       if (!appointments || appointments.length === 0) {
         toast({
@@ -139,6 +161,13 @@ export default function Financeiro() {
         startDate: periodDates.start,
         endDate: periodDates.end,
       });
+
+      // Incrementar contador de exportações (se não for trial e não for ilimitado)
+      if (!isTrial && exportLimit !== -1) {
+        await updateProfile.mutateAsync({
+          export_count: (exportCount || 0) + 1,
+        });
+      }
 
       toast({
         title: 'Exportação realizada!',

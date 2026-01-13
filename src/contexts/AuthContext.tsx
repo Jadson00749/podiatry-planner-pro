@@ -2,19 +2,55 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+interface LoginAttemptInfo {
+  isBlocked: boolean;
+  blockedUntil: string | null;
+  attemptsRemaining: number;
+  failedAttempts: number;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ 
+    error: Error | null; 
+    attemptInfo?: LoginAttemptInfo;
+  }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   resetPasswordForEmail: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  checkLoginBlocked: (email: string) => Promise<LoginAttemptInfo | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Função helper para registrar acesso do usuário
+async function logUserAccess(userId: string, email: string) {
+  try {
+    // Obter User Agent do navegador
+    const userAgent = navigator.userAgent || null;
+
+    // Chamar função RPC do Supabase para registrar acesso
+    // @ts-ignore - função RPC não está nos tipos gerados
+    const { error } = await supabase.rpc('log_user_access', {
+      p_user_id: userId,
+      p_email: email,
+      p_ip_address: null, // IP não disponível no frontend
+      p_user_agent: userAgent,
+    });
+
+    if (error) {
+      console.error('Erro ao registrar acesso:', error);
+      // Não bloquear o login se falhar o registro
+    }
+  } catch (error) {
+    console.error('Erro ao registrar acesso:', error);
+    // Não bloquear o login se falhar o registro
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -22,28 +58,117 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
+    // Verificar sessão existente
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkLoginBlocked = async (email: string): Promise<LoginAttemptInfo | null> => {
+    try {
+      // @ts-ignore - função RPC não está nos tipos gerados
+      const { data, error } = await supabase.rpc('check_login_blocked', {
+        p_email: email.toLowerCase(),
+      });
+
+      if (error) {
+        console.error('Erro ao verificar bloqueio:', error);
+        return null;
+      }
+
+      if (data && Array.isArray(data) && (data as any[]).length > 0) {
+        const result = (data as any[])[0] as any;
+        return {
+          isBlocked: result.is_blocked,
+          blockedUntil: result.blocked_until,
+          attemptsRemaining: result.attempts_remaining,
+          failedAttempts: result.failed_attempts,
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Erro ao verificar bloqueio:', error);
+      return null;
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    const normalizedEmail = email.toLowerCase();
+    const userAgent = navigator.userAgent || null;
+
+    // Verificar se está bloqueado antes de tentar login
+    const blockedInfo = await checkLoginBlocked(normalizedEmail);
+    
+    if (blockedInfo?.isBlocked) {
+      return {
+        error: new Error('BLOCKED') as Error,
+        attemptInfo: blockedInfo,
+      };
+    }
+
+    // Tentar fazer login
+    const { error } = await supabase.auth.signInWithPassword({ 
+      email: normalizedEmail, 
+      password 
+    });
+
+    // Se login falhou, registrar tentativa falha
+    if (error) {
+      try {
+        // @ts-ignore - função RPC não está nos tipos gerados
+        const { data: attemptData, error: recordError } = await supabase.rpc('record_failed_login', {
+          p_email: normalizedEmail,
+          p_ip_address: null, // IP não disponível no frontend
+          p_user_agent: userAgent,
+        });
+
+        if (!recordError && attemptData && Array.isArray(attemptData) && (attemptData as any[]).length > 0) {
+          const result = (attemptData as any[])[0] as any;
+          const attemptInfo: LoginAttemptInfo = {
+            isBlocked: result.is_blocked,
+            blockedUntil: result.blocked_until,
+            attemptsRemaining: result.attempts_remaining,
+            failedAttempts: result.failed_attempts,
+          };
+
+          return {
+            error: error as Error,
+            attemptInfo,
+          };
+        }
+      } catch (recordError) {
+        console.error('Erro ao registrar tentativa falha:', recordError);
+      }
+    } else {
+      // Login bem-sucedido: resetar tentativas
+      try {
+        // @ts-ignore - função RPC não está nos tipos gerados
+        await supabase.rpc('reset_login_attempts', {
+          p_email: normalizedEmail,
+        });
+      } catch (resetError) {
+        console.error('Erro ao resetar tentativas:', resetError);
+      }
+    }
+
+    return { 
+      error: error as Error | null,
+      attemptInfo: blockedInfo || undefined,
+    };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -137,7 +262,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle, resetPasswordForEmail, updatePassword, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      signIn, 
+      signUp, 
+      signInWithGoogle, 
+      resetPasswordForEmail, 
+      updatePassword, 
+      signOut,
+      checkLoginBlocked,
+    }}>
       {children}
     </AuthContext.Provider>
   );

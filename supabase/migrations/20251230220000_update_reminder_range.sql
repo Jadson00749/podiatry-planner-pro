@@ -122,3 +122,5 @@ COMMENT ON FUNCTION public.send_appointment_reminders() IS
 
 
 
+
+

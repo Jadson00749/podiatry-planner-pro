@@ -5,7 +5,6 @@
 
 export async function forceServiceWorkerUpdate(): Promise<boolean> {
   if (!('serviceWorker' in navigator)) {
-    console.warn('Service Worker não suportado');
     return false;
   }
 
@@ -13,13 +12,11 @@ export async function forceServiceWorkerUpdate(): Promise<boolean> {
     // 1. Desregistrar todos os Service Workers
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map(reg => reg.unregister()));
-    console.log('✅ Service Workers antigos desregistrados');
 
     // 2. Limpar todos os caches
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
-      console.log('✅ Caches limpos');
     }
 
     // 3. Limpar localStorage e sessionStorage (opcional, cuidado!)
@@ -27,12 +24,11 @@ export async function forceServiceWorkerUpdate(): Promise<boolean> {
     // sessionStorage.clear();
 
     // 4. Recarregar a página
-    console.log('🔄 Recarregando página...');
     window.location.reload();
 
     return true;
   } catch (error) {
-    console.error('❌ Erro ao forçar atualização:', error);
+    // Erro silencioso - função de debug
     return false;
   }
 }
@@ -43,9 +39,11 @@ export async function forceServiceWorkerUpdate(): Promise<boolean> {
 export function addForceUpdateButton() {
   if (typeof window !== 'undefined') {
     (window as any).forceUpdate = forceServiceWorkerUpdate;
-    console.log('💡 Digite forceUpdate() no console para forçar atualização');
+    // console.log removido para produção
   }
 }
+
+
 
 
 

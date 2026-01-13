@@ -17,6 +17,9 @@ import { useProcedures } from '@/hooks/useProcedures';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { exportProcedureReport, exportClientFrequencyReport, exportScheduleReport } from '@/utils/exportReports';
+import { usePlan } from '@/hooks/usePlan';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { useUpdateProfile } from '@/hooks/useProfile';
 
 type PeriodOption = 'current-month' | 'last-month' | 'last-3-months' | 'last-6-months' | 'current-year' | 'last-year' | 'custom';
 
@@ -28,6 +31,15 @@ export default function Relatorios() {
   const { data: procedures } = useProcedures();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const updateProfile = useUpdateProfile();
+  const { 
+    canUseReports, 
+    canExport, 
+    exportCount, 
+    exportLimit, 
+    isTrial, 
+    trialDaysLeft 
+  } = usePlan();
   const currentDate = new Date();
   const [periodOption, setPeriodOption] = useState<PeriodOption>('current-month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
@@ -280,7 +292,22 @@ export default function Relatorios() {
     };
   }, [appointments, periodDates]);
 
-  const handleExport = (type: 'procedures' | 'clients' | 'schedule', format: 'excel' | 'pdf') => {
+  const handleExport = async (type: 'procedures' | 'clients' | 'schedule', format: 'excel' | 'pdf') => {
+    // Verificar se pode exportar
+    if (!canExport()) {
+      toast({
+        title: 'Limite de exportações atingido',
+        description: `Você usou ${exportCount}/${exportLimit === -1 ? '∞' : exportLimit} exportações. Faça upgrade para exportações ilimitadas.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => window.location.href = '/planos'}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
     try {
       if (type === 'procedures') {
         exportProcedureReport(procedureReport, { format, periodDates, periodLabel });
@@ -288,6 +315,13 @@ export default function Relatorios() {
         exportClientFrequencyReport(clientFrequencyReport, { format, periodDates, periodLabel });
       } else if (type === 'schedule') {
         exportScheduleReport(scheduleReport, { format, periodDates, periodLabel });
+      }
+
+      // Incrementar contador de exportações (se não for trial e não for ilimitado)
+      if (!isTrial && exportLimit !== -1) {
+        await updateProfile.mutateAsync({
+          export_count: (exportCount || 0) + 1,
+        });
       }
 
       toast({
@@ -304,9 +338,37 @@ export default function Relatorios() {
     }
   };
 
+  // Verificar se tem acesso aos relatórios
+  if (!canUseReports()) {
+    return (
+      <AppLayout>
+        <div className="space-y-6 animate-fade-in">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Relatórios</h1>
+            <p className="text-muted-foreground">Análises e estatísticas detalhadas</p>
+          </div>
+          <UpgradePrompt 
+            feature="Relatórios e Análises" 
+            requiredPlan="professional"
+          />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-4 sm:space-y-6 animate-fade-in px-2 sm:px-0">
+        {isTrial && (
+          <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-foreground">Período Grátis Ativo</p>
+              <p className="text-sm text-muted-foreground">
+                Você tem <strong>{trialDaysLeft} dias</strong> restantes para testar todas as funcionalidades.
+              </p>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Relatórios</h1>

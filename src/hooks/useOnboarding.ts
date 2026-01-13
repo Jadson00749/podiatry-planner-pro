@@ -131,8 +131,6 @@ export function useOnboarding() {
     
     // Forçar remontagem do componente imediatamente
     setTourKey(prev => prev + 1);
-    
-    console.log('Tour iniciado manualmente', newState);
   };
 
   const nextStep = (step: OnboardingStep) => {

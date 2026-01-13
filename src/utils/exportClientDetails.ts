@@ -274,7 +274,7 @@ export function exportClientDetails(options: ExportOptions) {
       doc.setFontSize(14);
       doc.setTextColor(20, 184, 166);
       doc.setFont(undefined, 'bold');
-      doc.text('Anamnese Podológica', 14, currentY);
+      doc.text('Anamnese do Paciente', 14, currentY);
       currentY += 8;
 
       const anamnesisTableData = [
@@ -322,6 +322,8 @@ export function exportClientDetails(options: ExportOptions) {
     doc.save(`${fileName}.pdf`);
   }
 }
+
+
 
 
 

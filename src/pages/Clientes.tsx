@@ -13,6 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { generateWhatsAppLink } from '@/lib/whatsapp';
 import { formatPhone } from '@/lib/phone';
 import { exportClients } from '@/utils/exportClients';
+import { usePlan } from '@/hooks/usePlan';
+import { useUpdateProfile } from '@/hooks/useProfile';
 
 export default function Clientes() {
   const navigate = useNavigate();
@@ -22,6 +24,15 @@ export default function Clientes() {
   const createClient = useCreateClient();
   const deleteClient = useDeleteClient();
   const { toast } = useToast();
+  const { 
+    canCreateClient, 
+    maxClients, 
+    canExport, 
+    exportCount, 
+    exportLimit, 
+    isTrial 
+  } = usePlan();
+  const updateProfile = useUpdateProfile();
 
   const [formData, setFormData] = useState({ name: '', phone: '', whatsapp: '', email: '', address: '', notes: '' });
 
@@ -37,7 +48,22 @@ export default function Clientes() {
     c.whatsapp?.includes(search)
   );
 
-  const handleExport = (format: 'excel' | 'pdf') => {
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    // Verificar se pode exportar
+    if (!canExport()) {
+      toast({
+        title: 'Limite de exportações atingido',
+        description: `Você usou ${exportCount}/${exportLimit === -1 ? '∞' : exportLimit} exportações. Faça upgrade para exportações ilimitadas.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => navigate('/planos')}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
     try {
       const clientsToExport = filteredClients && filteredClients.length > 0 ? filteredClients : clients || [];
       
@@ -51,6 +77,13 @@ export default function Clientes() {
       }
 
       exportClients(clientsToExport, { format });
+      
+      // Incrementar contador de exportações (se não for trial e não for ilimitado)
+      if (!isTrial && exportLimit !== -1) {
+        await updateProfile.mutateAsync({
+          export_count: (exportCount || 0) + 1,
+        });
+      }
       
       toast({
         title: 'Exportação realizada!',
@@ -67,6 +100,23 @@ export default function Clientes() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Verificar limite de clientes
+    const currentCount = clients?.length || 0;
+    if (!canCreateClient(currentCount)) {
+      toast({
+        title: 'Limite de clientes atingido',
+        description: `Você atingiu o limite de ${maxClients === -1 ? '∞' : maxClients} clientes do seu plano. Faça upgrade para mais clientes.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => navigate('/planos')}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
     try {
       // Remove máscara antes de salvar (apenas números)
       const cleanPhone = formData.phone.replace(/\D/g, '') || null;

@@ -28,27 +28,13 @@ export function usePushNotifications() {
     const hasServiceWorker = 'serviceWorker' in navigator;
     const isSupported = hasNotification && hasServiceWorker;
     
-    console.log('🔍 Verificando suporte a notificações push:');
-    console.log('  - Notification API:', hasNotification);
-    console.log('  - Service Worker:', hasServiceWorker);
-    console.log('  - Suportado:', isSupported);
-    console.log('  - User Agent:', navigator.userAgent);
-    
+    // Logs removidos para produção
     if (isSupported) {
       setNotificationState(prev => ({
         ...prev,
         isSupported: true,
         permission: Notification.permission,
       }));
-      console.log('  - Permissão atual:', Notification.permission);
-    } else {
-      console.warn('⚠️ Notificações push não suportadas neste navegador');
-      if (!hasNotification) {
-        console.warn('  - Notification API não disponível');
-      }
-      if (!hasServiceWorker) {
-        console.warn('  - Service Worker não disponível');
-      }
     }
   }, []);
 
@@ -59,7 +45,6 @@ export function usePushNotifications() {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => {
           registration.unregister();
-          console.log('Service Worker antigo desregistrado');
         });
         
         // Depois de desregistrar, aguardar um pouco e registrar o novo
@@ -73,7 +58,6 @@ export function usePushNotifications() {
               scope: '/' 
             })
             .then((registration) => {
-              console.log('Service Worker registrado:', registration);
               serviceWorkerRegistration.current = registration;
               setNotificationState(prev => ({ ...prev, isSubscribed: true }));
               
@@ -88,15 +72,11 @@ export function usePushNotifications() {
                     if (newWorker.state === 'installed') {
                       if (navigator.serviceWorker.controller) {
                         // Nova versão disponível, forçar atualização
-                        console.log('Nova versão do Service Worker disponível, atualizando...');
                         newWorker.postMessage({ type: 'SKIP_WAITING' });
                         // Recarregar após 1 segundo
                         setTimeout(() => {
                           window.location.reload();
                         }, 1000);
-                      } else {
-                        // Primeira instalação
-                        console.log('Service Worker instalado pela primeira vez');
                       }
                     }
                   });
@@ -270,7 +250,6 @@ export function usePushNotifications() {
   // Função para testar notificação manualmente (útil para debug)
   const testNotification = useCallback(() => {
     if (notificationState.permission !== 'granted') {
-      console.warn('Permissão de notificações não concedida');
       return false;
     }
 

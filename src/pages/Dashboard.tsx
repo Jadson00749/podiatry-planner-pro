@@ -22,6 +22,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
+import { usePlan } from '@/hooks/usePlan';
+import { useUpdateProfile } from '@/hooks/useProfile';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -100,7 +102,25 @@ export default function Dashboard() {
     updateAppointment.mutate({ id, payment_status });
   };
 
-  const handleExport = (format: 'excel' | 'pdf') => {
+  const { canExport, exportCount, exportLimit, isTrial } = usePlan();
+  const updateProfile = useUpdateProfile();
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    // Verificar se pode exportar
+    if (!canExport()) {
+      toast({
+        title: 'Limite de exportações atingido',
+        description: `Você usou ${exportCount}/${exportLimit === -1 ? '∞' : exportLimit} exportações. Faça upgrade para exportações ilimitadas.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => navigate('/planos')}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
     try {
       exportDashboard({
         format,
@@ -111,6 +131,13 @@ export default function Dashboard() {
           profileName: profile?.full_name,
         },
       });
+
+      // Incrementar contador de exportações (se não for trial e não for ilimitado)
+      if (!isTrial && exportLimit !== -1) {
+        await updateProfile.mutateAsync({
+          export_count: (exportCount || 0) + 1,
+        });
+      }
 
       toast({
         title: 'Exportação realizada!',
