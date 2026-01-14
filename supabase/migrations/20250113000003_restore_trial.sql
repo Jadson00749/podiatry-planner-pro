@@ -16,3 +16,5 @@ WHERE user_id IN (
 --   trial_ends_at = now() + INTERVAL '15 days'
 -- WHERE user_id = '00000000-0000-0000-0000-000000000000';  -- ⚠️ SUBSTITUA PELO SEU USER_ID AQUI
 
+
+

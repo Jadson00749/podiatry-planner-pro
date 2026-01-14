@@ -6,3 +6,5 @@ SET max_procedures = 10
 WHERE subscription_plan = 'basic' 
   AND max_procedures = 5;
 
+
+

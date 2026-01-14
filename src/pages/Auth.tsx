@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Footprints, Loader2, Mail } from 'lucide-react';
+import { Eye, EyeOff, CalendarCheck, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -450,7 +450,7 @@ export default function Auth() {
         <div className="relative z-10 flex flex-col items-center justify-center w-full px-12 text-center">
           <div className="animate-float">
             <div className="w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-8 shadow-glow">
-              <Footprints className="w-14 h-14 text-white" />
+              <CalendarCheck className="w-14 h-14 text-white" />
             </div>
           </div>
           
@@ -479,21 +479,24 @@ export default function Auth() {
 
       {/* Right Side - Form */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 sm:px-8 sm:py-12 lg:p-12 bg-background relative">
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        {/* Header - Logo e Tema alinhados */}
+        <div className="absolute top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-6 flex items-center justify-between">
+          {/* Mobile Logo - Compacto */}
+          <div className="lg:hidden flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
+              <CalendarCheck className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">AgendaPro</h1>
+              <p className="text-xs text-muted-foreground">Gestão Clínica</p>
+            </div>
+          </div>
+          
+          {/* Theme Toggle */}
           <ThemeToggle />
         </div>
 
-        {/* Mobile Logo */}
-        <div className="lg:hidden flex items-center gap-3 mb-6 sm:mb-8">
-          <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
-            <Footprints className="w-7 h-7 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">PodoAgenda</h1>
-            <p className="text-sm text-muted-foreground">Gestão Clínica</p>
-          </div>
-        </div>
-
+        {/* Conteúdo centralizado */}
         <div className="w-full max-w-md">
           <div className="text-center mb-6 sm:mb-8">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">

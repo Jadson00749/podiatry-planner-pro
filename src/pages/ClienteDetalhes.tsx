@@ -16,6 +16,8 @@ import { useClients, useUpdateClient } from '@/hooks/useClients';
 import { useClientAppointments, useUpdateAppointment, PaymentStatus } from '@/hooks/useAppointments';
 import { useProcedures } from '@/hooks/useProcedures';
 import { useAnamnesis, useCreateAnamnesis, useUpdateAnamnesis } from '@/hooks/useAnamnesis';
+import { useAnamnesisTemplates } from '@/hooks/useAnamnesisTemplates';
+import { AnamnesisForm } from '@/components/anamnesis/AnamnesisForm';
 import { AppointmentDetailCard } from '@/components/cliente/AppointmentDetailCard';
 import { FinancialHistoryRow } from '@/components/cliente/FinancialHistoryRow';
 import { generateWhatsAppLink } from '@/lib/whatsapp';
@@ -27,6 +29,7 @@ import { exportClientDetails } from '@/utils/exportClientDetails';
 import { usePlan } from '@/hooks/usePlan';
 import { useUpdateProfile } from '@/hooks/useProfile';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { ImageUpload } from '@/components/ImageUpload';
 
 export default function ClienteDetalhes() {
   const { id } = useParams<{ id: string }>();
@@ -85,21 +88,34 @@ export default function ClienteDetalhes() {
       };
     }
 
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    // Ordenar todos os agendamentos por data
     const sortedAppointments = [...appointments].sort((a, b) => {
       const dateCompare = a.appointment_date.localeCompare(b.appointment_date);
       if (dateCompare !== 0) return dateCompare;
       return a.appointment_time.localeCompare(b.appointment_time);
     });
 
+    // Primeira consulta: a primeira que foi agendada (independente de status)
     const firstAppointment = sortedAppointments[0];
-    const lastAppointment = sortedAppointments[sortedAppointments.length - 1];
+    
+    // Última consulta: apenas consultas CONCLUÍDAS que já aconteceram (hoje ou no passado)
+    const completedPastAppointments = sortedAppointments.filter(a => 
+      a.status === 'completed' && a.appointment_date <= today
+    );
+    
+    const lastAppointment = completedPastAppointments.length > 0 
+      ? completedPastAppointments[completedPastAppointments.length - 1]
+      : null;
+    
     const totalSpent = appointments
       .filter(a => a.payment_status === 'paid')
       .reduce((sum, a) => sum + Number(a.price), 0);
 
     return {
       firstAppointment: firstAppointment.appointment_date,
-      lastAppointment: lastAppointment.appointment_date,
+      lastAppointment: lastAppointment?.appointment_date || null,
       totalAppointments: appointments.length,
       totalSpent,
     };
@@ -138,6 +154,14 @@ export default function ClienteDetalhes() {
 
   // Estado para edição de anamnese
   const [isEditingAnamnesis, setIsEditingAnamnesis] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [anamnesisFormData, setAnamnesisFormData] = useState<Record<string, any>>({});
+  
+  // Templates dinâmicos
+  const { data: templates } = useAnamnesisTemplates();
+  const userTemplates = templates?.filter(t => !t.is_system_template) || [];
+  const defaultTemplate = userTemplates.find(t => t.is_default) || userTemplates[0];
+  
   const [anamnesisData, setAnamnesisData] = useState({
     main_complaint: '',
     problem_history: '',
@@ -157,6 +181,7 @@ export default function ClienteDetalhes() {
   // Atualizar dados quando anamnese carregar
   useEffect(() => {
     if (anamnesis && !isEditingAnamnesis) {
+      // Dados antigos (compatibilidade)
       setAnamnesisData({
         main_complaint: anamnesis.main_complaint || '',
         problem_history: anamnesis.problem_history || '',
@@ -172,6 +197,14 @@ export default function ClienteDetalhes() {
         calluses_fissures: anamnesis.calluses_fissures || '',
         clinical_observations: anamnesis.clinical_observations || '',
       });
+      
+      // Dados dinâmicos do template
+      if (anamnesis.dynamic_answers) {
+        setAnamnesisFormData(anamnesis.dynamic_answers as Record<string, any>);
+      }
+      if (anamnesis.template_id) {
+        setSelectedTemplateId(anamnesis.template_id);
+      }
     }
   }, [anamnesis, isEditingAnamnesis]);
 
@@ -235,41 +268,25 @@ export default function ClienteDetalhes() {
   };
 
   const handleCreateAnamnesis = () => {
+    // Selecionar template padrão se houver
+    if (defaultTemplate) {
+      setSelectedTemplateId(defaultTemplate.id);
+    }
+    setAnamnesisFormData({});
     setIsEditingAnamnesis(true);
-    setAnamnesisData({
-      main_complaint: '',
-      problem_history: '',
-      has_diabetes: false,
-      has_circulatory_problems: false,
-      has_hypertension: false,
-      uses_continuous_medication: false,
-      has_allergies: false,
-      is_pregnant: false,
-      skin_type: '',
-      sensitivity: '',
-      nail_condition: '',
-      calluses_fissures: '',
-      clinical_observations: '',
-    });
   };
 
   const handleEditAnamnesis = () => {
+    // Manter template e dados existentes
     if (anamnesis) {
-      setAnamnesisData({
-        main_complaint: anamnesis.main_complaint || '',
-        problem_history: anamnesis.problem_history || '',
-        has_diabetes: anamnesis.has_diabetes || false,
-        has_circulatory_problems: anamnesis.has_circulatory_problems || false,
-        has_hypertension: anamnesis.has_hypertension || false,
-        uses_continuous_medication: anamnesis.uses_continuous_medication || false,
-        has_allergies: anamnesis.has_allergies || false,
-        is_pregnant: anamnesis.is_pregnant || false,
-        skin_type: anamnesis.skin_type || '',
-        sensitivity: anamnesis.sensitivity || '',
-        nail_condition: anamnesis.nail_condition || '',
-        calluses_fissures: anamnesis.calluses_fissures || '',
-        clinical_observations: anamnesis.clinical_observations || '',
-      });
+      if (anamnesis.template_id) {
+        setSelectedTemplateId(anamnesis.template_id);
+      } else if (defaultTemplate) {
+        setSelectedTemplateId(defaultTemplate.id);
+      }
+      if (anamnesis.dynamic_answers) {
+        setAnamnesisFormData(anamnesis.dynamic_answers as Record<string, any>);
+      }
     }
     setIsEditingAnamnesis(true);
   };
@@ -307,7 +324,7 @@ export default function ClienteDetalhes() {
     }
   };
 
-  const handleSaveAnamnesis = async () => {
+  const handleSaveAnamnesisForm = async (formData: Record<string, any>) => {
     if (!id) return;
 
     try {
@@ -315,14 +332,16 @@ export default function ClienteDetalhes() {
         // Atualizar anamnese existente
         await updateAnamnesis.mutateAsync({
           id: anamnesis.id,
-          ...anamnesisData,
+          template_id: selectedTemplateId,
+          dynamic_answers: formData,
         });
         toast({ title: 'Anamnese atualizada com sucesso!' });
       } else {
         // Criar nova anamnese
         await createAnamnesis.mutateAsync({
           client_id: id,
-          ...anamnesisData,
+          template_id: selectedTemplateId,
+          dynamic_answers: formData,
         });
         toast({ title: 'Anamnese criada com sucesso!' });
       }
@@ -524,6 +543,38 @@ export default function ClienteDetalhes() {
             <div className="rounded-xl bg-card border border-border p-5 sm:p-6">
               <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-5">Informações de Contato</h3>
               <div className="space-y-4 sm:space-y-5">
+                {/* Foto do Cliente */}
+                <div className="flex flex-col items-center sm:items-start">
+                  <ImageUpload
+                    currentImageUrl={client.avatar_url || ''}
+                    onImageUploaded={async (url) => {
+                      try {
+                        await updateClient.mutateAsync({
+                          id: client.id,
+                          avatar_url: url,
+                        });
+                        toast({ title: 'Foto do cliente atualizada!' });
+                      } catch {
+                        toast({ variant: 'destructive', title: 'Erro ao atualizar foto' });
+                      }
+                    }}
+                    onImageRemoved={async () => {
+                      try {
+                        await updateClient.mutateAsync({
+                          id: client.id,
+                          avatar_url: null,
+                        });
+                        toast({ title: 'Foto do cliente removida!' });
+                      } catch {
+                        toast({ variant: 'destructive', title: 'Erro ao remover foto' });
+                      }
+                    }}
+                    folder="avatars"
+                    label="Foto do Cliente"
+                    description="Foto para identificação visual"
+                  />
+                </div>
+
                 <div>
                   <Label>Nome</Label>
                   {isEditing ? (
@@ -638,7 +689,12 @@ export default function ClienteDetalhes() {
                     <Label className="text-muted-foreground">Primeira Consulta</Label>
                     <p className="mt-1 text-foreground font-medium">
                       {clientStats.firstAppointment 
-                        ? format(parseISO(clientStats.firstAppointment), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                        ? (() => {
+                            const firstDate = parseISO(clientStats.firstAppointment);
+                            const today = new Date();
+                            const isToday = format(firstDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+                            return isToday ? 'Hoje' : format(firstDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+                          })()
                         : 'Nenhuma consulta'
                       }
                     </p>
@@ -647,7 +703,12 @@ export default function ClienteDetalhes() {
                     <Label className="text-muted-foreground">Última Consulta</Label>
                     <p className="mt-1 text-foreground font-medium">
                       {clientStats.lastAppointment 
-                        ? format(parseISO(clientStats.lastAppointment), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                        ? (() => {
+                            const lastDate = parseISO(clientStats.lastAppointment);
+                            const today = new Date();
+                            const isToday = format(lastDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+                            return isToday ? 'Hoje' : format(lastDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+                          })()
                         : 'Nenhuma consulta'
                       }
                     </p>
@@ -786,206 +847,105 @@ export default function ClienteDetalhes() {
               </div>
             ) : (
               <>
-                {/* Queixa Principal */}
-                <div className="rounded-xl bg-card border border-border p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Queixa Principal</h3>
-                  {isEditingAnamnesis ? (
-                    <Textarea
-                      placeholder="Qual o principal motivo do atendimento?"
-                      value={anamnesisData.main_complaint}
-                      onChange={e => setAnamnesisData({...anamnesisData, main_complaint: e.target.value})}
-                      className="min-h-[100px]"
-                    />
-                  ) : (
-                    <p className="text-foreground whitespace-pre-wrap">
-                      {anamnesis?.main_complaint || 'Não informado.'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Histórico do Problema */}
-                <div className="rounded-xl bg-card border border-border p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Histórico do Problema</h3>
-                  {isEditingAnamnesis ? (
-                    <Textarea
-                      placeholder="Há quanto tempo ocorre? Já fez tratamento antes?"
-                      value={anamnesisData.problem_history}
-                      onChange={e => setAnamnesisData({...anamnesisData, problem_history: e.target.value})}
-                      className="min-h-[100px]"
-                    />
-                  ) : (
-                    <p className="text-foreground whitespace-pre-wrap">
-                      {anamnesis?.problem_history || 'Não informado.'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Condições de Saúde */}
-                <div className="rounded-xl bg-card border border-border p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Condições de Saúde</h3>
-                  <div className="space-y-3">
-                    {[
-                      { key: 'has_diabetes', label: 'Diabetes' },
-                      { key: 'has_circulatory_problems', label: 'Problemas circulatórios' },
-                      { key: 'has_hypertension', label: 'Hipertensão' },
-                      { key: 'uses_continuous_medication', label: 'Uso contínuo de medicamentos' },
-                      { key: 'has_allergies', label: 'Alergias' },
-                      { key: 'is_pregnant', label: 'Gestante' },
-                    ].map(({ key, label }) => (
-                      <div 
-                        key={key} 
-                        className={cn(
-                          "flex items-center space-x-3 p-2 rounded-md transition-colors",
-                          isEditingAnamnesis && "hover:bg-muted/50 cursor-pointer"
+                {isEditingAnamnesis ? (
+                  <>
+                    {/* Seletor de Template */}
+                    {(!selectedTemplateId || userTemplates.length > 1) && (
+                      <div className="rounded-xl bg-card border border-border p-6">
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Selecionar Modelo de Anamnese</h3>
+                        <Select
+                          value={selectedTemplateId || ''}
+                          onValueChange={setSelectedTemplateId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um modelo..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userTemplates.map((template) => (
+                              <SelectItem key={template.id} value={template.id}>
+                                {template.name}
+                                {template.is_default && ' (Padrão)'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {userTemplates.length === 0 && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Você não tem modelos personalizados.{' '}
+                            <a href="/modelos-anamnese" className="text-primary hover:underline">
+                              Criar primeiro modelo
+                            </a>
+                          </p>
                         )}
-                      >
-                        <Checkbox
-                          id={key}
-                          checked={isEditingAnamnesis 
-                            ? (anamnesisData[key as keyof typeof anamnesisData] as boolean)
-                            : (anamnesis?.[key as keyof typeof anamnesis] as boolean) || false
-                          }
-                          onCheckedChange={(checked) => {
-                            if (isEditingAnamnesis) {
-                              setAnamnesisData({...anamnesisData, [key]: checked});
-                            }
-                          }}
-                          disabled={!isEditingAnamnesis}
-                        />
-                        <Label 
-                          htmlFor={key}
-                          className={cn(
-                            "text-sm font-normal flex-1 transition-colors",
-                            isEditingAnamnesis && "cursor-pointer",
-                            !isEditingAnamnesis && "cursor-default",
-                            !isEditingAnamnesis && !anamnesis?.[key as keyof typeof anamnesis] && "text-muted-foreground",
-                            isEditingAnamnesis && anamnesisData[key as keyof typeof anamnesisData] && "text-foreground font-medium"
-                          )}
-                        >
-                          {label}
-                        </Label>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    )}
 
-                {/* Avaliação Clínica */}
-                <div className="rounded-xl bg-card border border-border p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Avaliação Clínica</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Tipo de pele</Label>
-                      {isEditingAnamnesis ? (
-                        <Select
-                          value={anamnesisData.skin_type}
-                          onValueChange={(value) => setAnamnesisData({...anamnesisData, skin_type: value})}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecione o tipo de pele" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="seca">Seca</SelectItem>
-                            <SelectItem value="normal">Normal</SelectItem>
-                            <SelectItem value="umida">Úmida</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="mt-1 text-foreground">
-                          {anamnesis?.skin_type ? anamnesis.skin_type.charAt(0).toUpperCase() + anamnesis.skin_type.slice(1) : 'Não informado'}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label>Sensibilidade</Label>
-                      {isEditingAnamnesis ? (
-                        <Select
-                          value={anamnesisData.sensitivity}
-                          onValueChange={(value) => setAnamnesisData({...anamnesisData, sensitivity: value})}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecione a sensibilidade" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="normal">Normal</SelectItem>
-                            <SelectItem value="reduzida">Reduzida</SelectItem>
-                            <SelectItem value="aumentada">Aumentada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="mt-1 text-foreground">
-                          {anamnesis?.sensitivity ? anamnesis.sensitivity.charAt(0).toUpperCase() + anamnesis.sensitivity.slice(1) : 'Não informado'}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label>Condição das unhas</Label>
-                      {isEditingAnamnesis ? (
-                        <Textarea
-                          placeholder="Descreva a condição das unhas..."
-                          value={anamnesisData.nail_condition}
-                          onChange={e => setAnamnesisData({...anamnesisData, nail_condition: e.target.value})}
-                          className="mt-1 min-h-[80px]"
+                    {/* Formulário Dinâmico */}
+                    {selectedTemplateId && (
+                      <div className="rounded-xl bg-card border border-border p-6">
+                        <h3 className="text-lg font-semibold text-foreground mb-6">
+                          {templates?.find(t => t.id === selectedTemplateId)?.name}
+                        </h3>
+                        <AnamnesisForm
+                          template={templates?.find(t => t.id === selectedTemplateId)!}
+                          initialData={anamnesisFormData}
+                          onSubmit={handleSaveAnamnesisForm}
+                          isLoading={createAnamnesis.isPending || updateAnamnesis.isPending}
                         />
-                      ) : (
-                        <p className="mt-1 text-foreground whitespace-pre-wrap">
-                          {anamnesis?.nail_condition || 'Não informado.'}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Visualização da Anamnese Preenchida */}
+                    {anamnesis?.dynamic_answers && selectedTemplateId ? (
+                      <div className="rounded-xl bg-card border border-border p-6">
+                        <h3 className="text-lg font-semibold text-foreground mb-6">
+                          {templates?.find(t => t.id === selectedTemplateId)?.name}
+                        </h3>
+                        <div className="space-y-6">
+                          {templates
+                            ?.find(t => t.id === selectedTemplateId)
+                            ?.questions?.map((question, index) => {
+                              const answer = anamnesisFormData[question.id];
+                              
+                              if (question.question_type === 'section') {
+                                return (
+                                  <div key={question.id} className="pt-4 pb-2 border-b-2 border-primary/20">
+                                    <h4 className="text-xl font-semibold text-foreground">{question.question_text}</h4>
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <div key={question.id} className="space-y-1">
+                                  <Label className="text-sm font-semibold">
+                                    {index + 1}. {question.question_text}
+                                  </Label>
+                                  <p className="text-foreground pl-4">
+                                    {answer 
+                                      ? (typeof answer === 'object' 
+                                          ? `${answer.answer}${answer.details ? ` - ${answer.details}` : ''}`
+                                          : answer)
+                                      : 'Não informado'}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl bg-card border border-border p-8 text-center">
+                        <p className="text-muted-foreground">
+                          Nenhuma anamnese preenchida ainda.
                         </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label>Presença de calosidades / fissuras</Label>
-                      {isEditingAnamnesis ? (
-                        <Textarea
-                          placeholder="Descreva calosidades e/ou fissuras presentes..."
-                          value={anamnesisData.calluses_fissures}
-                          onChange={e => setAnamnesisData({...anamnesisData, calluses_fissures: e.target.value})}
-                          className="mt-1 min-h-[80px]"
-                        />
-                      ) : (
-                        <p className="mt-1 text-foreground whitespace-pre-wrap">
-                          {anamnesis?.calluses_fissures || 'Não informado.'}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Observações Clínicas */}
-                <div className="rounded-xl bg-card border border-border p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Observações Clínicas</h3>
-                  {isEditingAnamnesis ? (
-                    <Textarea
-                      placeholder="Cuidados recomendados, pontos de atenção, evolução esperada..."
-                      value={anamnesisData.clinical_observations}
-                      onChange={e => setAnamnesisData({...anamnesisData, clinical_observations: e.target.value})}
-                      className="min-h-[150px]"
-                    />
-                  ) : (
-                    <p className="text-foreground whitespace-pre-wrap">
-                      {anamnesis?.clinical_observations || 'Nenhuma observação clínica registrada.'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Botões de ação */}
-                {isEditingAnamnesis && (
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={handleSaveAnamnesis} className="gradient-primary w-full sm:w-auto">
-                      <Save className="h-4 w-4 mr-2" />
-                      Salvar Anamnese
-                    </Button>
-                    <Button variant="outline" onClick={handleCancelAnamnesis} className="w-full sm:w-auto">
-                      <X className="h-4 w-4 mr-2" />
-                      Cancelar
-                    </Button>
-                  </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
-              </>
+            </>
             )}
           </TabsContent>
 

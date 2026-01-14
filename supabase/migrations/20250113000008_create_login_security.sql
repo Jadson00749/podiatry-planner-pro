@@ -198,3 +198,5 @@ GRANT EXECUTE ON FUNCTION public.check_login_blocked TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.record_failed_login TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.reset_login_attempts TO anon, authenticated;
 
+
+

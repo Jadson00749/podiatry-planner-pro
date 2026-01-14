@@ -6,6 +6,9 @@ export interface Anamnesis {
   id: string;
   client_id: string;
   profile_id: string;
+  // Template dinâmico (novo)
+  template_id?: string | null;
+  dynamic_answers?: Record<string, any> | null;
   // Queixa Principal
   main_complaint: string | null;
   // Histórico do Problema
@@ -56,7 +59,7 @@ export function useCreateAnamnesis() {
   const { data: profile } = useProfile();
 
   return useMutation({
-    mutationFn: async (anamnesis: Omit<Anamnesis, 'id' | 'profile_id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (anamnesis: Partial<Omit<Anamnesis, 'id' | 'profile_id' | 'created_at' | 'updated_at'>> & { client_id: string }) => {
       if (!profile?.id) throw new Error('Profile not found');
 
       // @ts-ignore - anamnesis table exists but not in Supabase types

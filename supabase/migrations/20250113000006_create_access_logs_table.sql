@@ -84,3 +84,5 @@ COMMENT ON FUNCTION public.log_user_access IS 'Registra um acesso/login do usuá
 -- Permitir que usuários autenticados chamem a função
 GRANT EXECUTE ON FUNCTION public.log_user_access TO authenticated;
 
+
+

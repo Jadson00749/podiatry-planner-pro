@@ -35,3 +35,5 @@ WHERE user_id IN (
 -- JOIN auth.users u ON u.id = p.user_id
 -- WHERE u.email = 'seu-email@exemplo.com';  -- ⚠️ SUBSTITUA PELO SEU EMAIL AQUI
 
+
+

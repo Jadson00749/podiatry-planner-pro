@@ -24,3 +24,6 @@ COMMENT ON COLUMN public.profiles.clinic_facebook IS 'Facebook da clínica';
 
 
 
+
+
+

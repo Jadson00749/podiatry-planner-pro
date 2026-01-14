@@ -152,3 +152,5 @@ JOIN auth.users u ON u.id = p.user_id
 ORDER BY p.subscription_plan, u.email;
 */
 
+
+

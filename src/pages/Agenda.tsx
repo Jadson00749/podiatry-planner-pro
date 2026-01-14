@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, addDays, addMonths, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, isWithinInterval, isSameMonth, isPast, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Filter, X, Download, FileSpreadsheet, FileType, List, Grid3x3, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Calendar as CalendarIcon, Filter, X, Download, FileSpreadsheet, FileType, List, Grid3x3, LayoutGrid } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { AppointmentCard } from '@/components/dashboard/AppointmentCard';
@@ -17,16 +17,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { exportAppointments } from '@/utils/exportAppointments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlan } from '@/hooks/usePlan';
 import { useUpdateProfile } from '@/hooks/useProfile';
+import { ClientAvatar } from '@/components/ClientAvatar';
 
 type ViewMode = 'day' | 'week' | 'month';
 type StatusFilter = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
 type PaymentFilter = 'pending' | 'paid' | 'partial';
 type CardLayout = 'list' | 'grid-2' | 'grid-3';
+type MobileLayout = 'compact' | 'grouped'; // compact = atual, grouped = agrupado por período
 
 export default function Agenda() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,6 +44,11 @@ export default function Agenda() {
     const saved = localStorage.getItem('agenda_card_layout');
     return (saved as CardLayout) || 'list';
   });
+  const [mobileLayout, setMobileLayout] = useState<MobileLayout>(() => {
+    // Carregar preferência salva ou usar 'compact' como padrão
+    const saved = localStorage.getItem('agenda_mobile_layout');
+    return (saved as MobileLayout) || 'compact';
+  });
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate);
@@ -50,6 +58,11 @@ export default function Agenda() {
   useEffect(() => {
     localStorage.setItem('agenda_card_layout', cardLayout);
   }, [cardLayout]);
+
+  // Salvar preferência de layout mobile
+  useEffect(() => {
+    localStorage.setItem('agenda_mobile_layout', mobileLayout);
+  }, [mobileLayout]);
 
   // Atualizar currentMonth quando selectedDate mudar
   useEffect(() => {
@@ -66,6 +79,13 @@ export default function Agenda() {
   // Filtros de status
   const [statusFilters, setStatusFilters] = useState<StatusFilter[]>([]);
   const [paymentFilters, setPaymentFilters] = useState<PaymentFilter[]>([]);
+  
+  // Controle de períodos expandidos (para layout agrupado no mobile)
+  const [expandedPeriods, setExpandedPeriods] = useState({
+    morning: true,
+    afternoon: true,
+    evening: true,
+  });
 
   const { data: appointments, isLoading } = useAppointments();
   const updateAppointment = useUpdateAppointment();
@@ -186,6 +206,40 @@ export default function Agenda() {
   };
 
   const hasActiveFilters = statusFilters.length > 0 || paymentFilters.length > 0;
+
+  // Agrupar agendamentos por período do dia
+  const groupedAppointments = useMemo(() => {
+    const morning = filteredAppointments.filter(apt => {
+      const hour = parseInt(apt.appointment_time.split(':')[0]);
+      return hour >= 6 && hour < 12;
+    });
+    const afternoon = filteredAppointments.filter(apt => {
+      const hour = parseInt(apt.appointment_time.split(':')[0]);
+      return hour >= 12 && hour < 18;
+    });
+    const evening = filteredAppointments.filter(apt => {
+      const hour = parseInt(apt.appointment_time.split(':')[0]);
+      return hour >= 18 || hour < 6;
+    });
+    
+    return { morning, afternoon, evening };
+  }, [filteredAppointments]);
+
+  const togglePeriod = (period: 'morning' | 'afternoon' | 'evening') => {
+    setExpandedPeriods(prev => ({
+      ...prev,
+      [period]: !prev[period],
+    }));
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-success';
+      case 'cancelled': return 'bg-destructive';
+      case 'no_show': return 'bg-warning';
+      default: return 'bg-primary';
+    }
+  };
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     // Verificar se pode exportar
@@ -396,13 +450,13 @@ export default function Agenda() {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-full sm:w-auto">
               {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
                   className={cn(
-                    'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                    'px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 sm:flex-none',
                     viewMode === mode
                       ? 'bg-background text-foreground shadow'
                       : 'text-muted-foreground hover:text-foreground'
@@ -416,42 +470,82 @@ export default function Agenda() {
             </div>
           </div>
 
-          {/* Layout Toggle (apenas desktop) e Filter */}
-          <div className="flex items-center gap-2">
+          {/* Layout Toggle e Filter */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Layout Toggle Mobile - apenas mobile e quando há agendamentos */}
+            {isMobile && filteredAppointments.length > 0 && viewMode === 'day' && (
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border border-border">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMobileLayout('compact')}
+                  className={cn(
+                    "h-8 px-3 text-xs transition-all",
+                    mobileLayout === 'compact' 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" 
+                      : "bg-background hover:bg-muted border-border"
+                  )}
+                  title="Visualização compacta"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMobileLayout('grouped')}
+                  className={cn(
+                    "h-8 px-3 text-xs transition-all",
+                    mobileLayout === 'grouped' 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" 
+                      : "bg-background hover:bg-muted border-border"
+                  )}
+                  title="Agrupado por período"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
             {/* Layout Toggle - apenas desktop e quando há agendamentos */}
             {!isMobile && filteredAppointments.length > 0 && viewMode === 'day' && (
               <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border border-border">
                 <Button
-                  variant={cardLayout === 'list' ? 'default' : 'ghost'}
+                  variant="outline"
                   size="sm"
                   onClick={() => setCardLayout('list')}
                   className={cn(
-                    "h-8 px-3",
-                    cardLayout === 'list' && "bg-background shadow-sm"
+                    "h-8 px-3 transition-all",
+                    cardLayout === 'list' 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" 
+                      : "bg-background hover:bg-muted border-border"
                   )}
                   title="Visualização em lista (1 por linha)"
                 >
                   <List className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant={cardLayout === 'grid-2' ? 'default' : 'ghost'}
+                  variant="outline"
                   size="sm"
                   onClick={() => setCardLayout('grid-2')}
                   className={cn(
-                    "h-8 px-3",
-                    cardLayout === 'grid-2' && "bg-background shadow-sm"
+                    "h-8 px-3 transition-all",
+                    cardLayout === 'grid-2' 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" 
+                      : "bg-background hover:bg-muted border-border"
                   )}
                   title="Visualização em grade (2 por linha)"
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant={cardLayout === 'grid-3' ? 'default' : 'ghost'}
+                  variant="outline"
                   size="sm"
                   onClick={() => setCardLayout('grid-3')}
                   className={cn(
-                    "h-8 px-3",
-                    cardLayout === 'grid-3' && "bg-background shadow-sm"
+                    "h-8 px-3 transition-all",
+                    cardLayout === 'grid-3' 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" 
+                      : "bg-background hover:bg-muted border-border"
                   )}
                   title="Visualização em grade (3 por linha)"
                 >
@@ -621,7 +715,356 @@ export default function Agenda() {
                   </Button>
                 )}
               </div>
+            ) : isMobile && mobileLayout === 'grouped' ? (
+              // Layout agrupado por período (apenas mobile)
+              <div className="space-y-3">
+                {/* Manhã */}
+                {groupedAppointments.morning.length > 0 && (
+                  <div className="rounded-xl bg-card border border-border overflow-hidden">
+                    <button
+                      onClick={() => togglePeriod('morning')}
+                      className="w-full p-3 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🌅</span>
+                        <span className="font-semibold text-sm">Manhã</span>
+                        <span className="text-xs text-muted-foreground">(6h - 12h)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {groupedAppointments.morning.length} agendamento{groupedAppointments.morning.length !== 1 ? 's' : ''}
+                        </span>
+                        <ChevronDown className={cn(
+                          "h-4 w-4 transition-transform",
+                          expandedPeriods.morning && "rotate-180"
+                        )} />
+                      </div>
+                    </button>
+                    {expandedPeriods.morning && (
+                      <div className="p-2 space-y-1.5">
+                        {groupedAppointments.morning
+                          .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
+                          .map((appointment) => (
+                            <div key={appointment.id} className="flex gap-0 overflow-hidden rounded-lg border border-border">
+                              <div className={cn("w-1 flex-shrink-0", getStatusColor(appointment.status))} />
+                              <div className="flex-1 min-w-0 p-2.5">
+                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <ClientAvatar 
+                                      avatarUrl={appointment.clients?.avatar_url}
+                                      name={appointment.clients?.name || 'Sem nome'}
+                                      size="sm"
+                                      className="flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm text-foreground truncate">
+                                        {appointment.appointment_time.slice(0, 5)} • {appointment.clients?.name || 'Sem nome'}
+                                      </p>
+                                      {appointment.procedures?.name && (
+                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                          {appointment.procedures.name}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                                    <Badge className={cn('text-[10px] px-1.5 py-0 whitespace-nowrap', 
+                                      appointment.status === 'completed' ? 'bg-success/10 text-success' :
+                                      appointment.status === 'cancelled' ? 'bg-destructive/10 text-destructive' :
+                                      appointment.status === 'no_show' ? 'bg-warning/10 text-warning' :
+                                      'bg-primary/10 text-primary'
+                                    )}>
+                                      {appointment.status === 'completed' ? 'Concluído' :
+                                       appointment.status === 'cancelled' ? 'Cancelado' :
+                                       appointment.status === 'no_show' ? 'Não compareceu' :
+                                       'Agendado'}
+                                    </Badge>
+                                    <Badge className={cn('text-[10px] px-1.5 py-0 whitespace-nowrap',
+                                      appointment.payment_status === 'paid' ? 'bg-success/10 text-success' :
+                                      appointment.payment_status === 'partial' ? 'bg-primary/10 text-primary' :
+                                      'bg-warning/10 text-warning'
+                                    )}>
+                                      {appointment.payment_status === 'paid' ? 'Pago' :
+                                       appointment.payment_status === 'partial' ? 'Parcial' :
+                                       'Pendente'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  💰 R$ {Number(appointment.price).toFixed(2)}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {appointment.status === 'scheduled' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-6 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+                                        onClick={() => handleStatusChange(appointment.id, 'completed')}
+                                      >
+                                        Concluir
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-6 px-2 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </>
+                                  )}
+                                  {appointment.payment_status === 'pending' && appointment.status === 'completed' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-6 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+                                      onClick={() => handlePaymentChange(appointment.id, 'paid')}
+                                    >
+                                      Pago
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tarde */}
+                {groupedAppointments.afternoon.length > 0 && (
+                  <div className="rounded-xl bg-card border border-border overflow-hidden">
+                    <button
+                      onClick={() => togglePeriod('afternoon')}
+                      className="w-full p-3 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🌞</span>
+                        <span className="font-semibold text-sm">Tarde</span>
+                        <span className="text-xs text-muted-foreground">(12h - 18h)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {groupedAppointments.afternoon.length} agendamento{groupedAppointments.afternoon.length !== 1 ? 's' : ''}
+                        </span>
+                        <ChevronDown className={cn(
+                          "h-4 w-4 transition-transform",
+                          expandedPeriods.afternoon && "rotate-180"
+                        )} />
+                      </div>
+                    </button>
+                    {expandedPeriods.afternoon && (
+                      <div className="p-2 space-y-1.5">
+                        {groupedAppointments.afternoon
+                          .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
+                          .map((appointment) => (
+                            <div key={appointment.id} className="flex gap-0 overflow-hidden rounded-lg border border-border">
+                              <div className={cn("w-1 flex-shrink-0", getStatusColor(appointment.status))} />
+                              <div className="flex-1 min-w-0 p-2.5">
+                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <ClientAvatar 
+                                      avatarUrl={appointment.clients?.avatar_url}
+                                      name={appointment.clients?.name || 'Sem nome'}
+                                      size="sm"
+                                      className="flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm text-foreground truncate">
+                                        {appointment.appointment_time.slice(0, 5)} • {appointment.clients?.name || 'Sem nome'}
+                                      </p>
+                                      {appointment.procedures?.name && (
+                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                          {appointment.procedures.name}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                                    <Badge className={cn('text-[10px] px-1.5 py-0 whitespace-nowrap', 
+                                      appointment.status === 'completed' ? 'bg-success/10 text-success' :
+                                      appointment.status === 'cancelled' ? 'bg-destructive/10 text-destructive' :
+                                      appointment.status === 'no_show' ? 'bg-warning/10 text-warning' :
+                                      'bg-primary/10 text-primary'
+                                    )}>
+                                      {appointment.status === 'completed' ? 'Concluído' :
+                                       appointment.status === 'cancelled' ? 'Cancelado' :
+                                       appointment.status === 'no_show' ? 'Não compareceu' :
+                                       'Agendado'}
+                                    </Badge>
+                                    <Badge className={cn('text-[10px] px-1.5 py-0 whitespace-nowrap',
+                                      appointment.payment_status === 'paid' ? 'bg-success/10 text-success' :
+                                      appointment.payment_status === 'partial' ? 'bg-primary/10 text-primary' :
+                                      'bg-warning/10 text-warning'
+                                    )}>
+                                      {appointment.payment_status === 'paid' ? 'Pago' :
+                                       appointment.payment_status === 'partial' ? 'Parcial' :
+                                       'Pendente'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  💰 R$ {Number(appointment.price).toFixed(2)}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {appointment.status === 'scheduled' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-6 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+                                        onClick={() => handleStatusChange(appointment.id, 'completed')}
+                                      >
+                                        Concluir
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-6 px-2 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </>
+                                  )}
+                                  {appointment.payment_status === 'pending' && appointment.status === 'completed' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-6 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+                                      onClick={() => handlePaymentChange(appointment.id, 'paid')}
+                                    >
+                                      Pago
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Noite */}
+                {groupedAppointments.evening.length > 0 && (
+                  <div className="rounded-xl bg-card border border-border overflow-hidden">
+                    <button
+                      onClick={() => togglePeriod('evening')}
+                      className="w-full p-3 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🌙</span>
+                        <span className="font-semibold text-sm">Noite</span>
+                        <span className="text-xs text-muted-foreground">(18h - 6h)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {groupedAppointments.evening.length} agendamento{groupedAppointments.evening.length !== 1 ? 's' : ''}
+                        </span>
+                        <ChevronDown className={cn(
+                          "h-4 w-4 transition-transform",
+                          expandedPeriods.evening && "rotate-180"
+                        )} />
+                      </div>
+                    </button>
+                    {expandedPeriods.evening && (
+                      <div className="p-2 space-y-1.5">
+                        {groupedAppointments.evening
+                          .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
+                          .map((appointment) => (
+                            <div key={appointment.id} className="flex gap-0 overflow-hidden rounded-lg border border-border">
+                              <div className={cn("w-1 flex-shrink-0", getStatusColor(appointment.status))} />
+                              <div className="flex-1 min-w-0 p-2.5">
+                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <ClientAvatar 
+                                      avatarUrl={appointment.clients?.avatar_url}
+                                      name={appointment.clients?.name || 'Sem nome'}
+                                      size="sm"
+                                      className="flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm text-foreground truncate">
+                                        {appointment.appointment_time.slice(0, 5)} • {appointment.clients?.name || 'Sem nome'}
+                                      </p>
+                                      {appointment.procedures?.name && (
+                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                          {appointment.procedures.name}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                                    <Badge className={cn('text-[10px] px-1.5 py-0 whitespace-nowrap', 
+                                      appointment.status === 'completed' ? 'bg-success/10 text-success' :
+                                      appointment.status === 'cancelled' ? 'bg-destructive/10 text-destructive' :
+                                      appointment.status === 'no_show' ? 'bg-warning/10 text-warning' :
+                                      'bg-primary/10 text-primary'
+                                    )}>
+                                      {appointment.status === 'completed' ? 'Concluído' :
+                                       appointment.status === 'cancelled' ? 'Cancelado' :
+                                       appointment.status === 'no_show' ? 'Não compareceu' :
+                                       'Agendado'}
+                                    </Badge>
+                                    <Badge className={cn('text-[10px] px-1.5 py-0 whitespace-nowrap',
+                                      appointment.payment_status === 'paid' ? 'bg-success/10 text-success' :
+                                      appointment.payment_status === 'partial' ? 'bg-primary/10 text-primary' :
+                                      'bg-warning/10 text-warning'
+                                    )}>
+                                      {appointment.payment_status === 'paid' ? 'Pago' :
+                                       appointment.payment_status === 'partial' ? 'Parcial' :
+                                       'Pendente'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  💰 R$ {Number(appointment.price).toFixed(2)}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {appointment.status === 'scheduled' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-6 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+                                        onClick={() => handleStatusChange(appointment.id, 'completed')}
+                                      >
+                                        Concluir
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-6 px-2 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </>
+                                  )}
+                                  {appointment.payment_status === 'pending' && appointment.status === 'completed' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-6 px-2 flex-shrink-0 text-success hover:text-success hover:bg-success/10"
+                                      onClick={() => handlePaymentChange(appointment.id, 'paid')}
+                                    >
+                                      Pago
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
+              // Layout normal (desktop e mobile compact)
               <div className={cn(
                 // Lista (padrão)
                 cardLayout === 'list' && !isMobile && "space-y-2",
@@ -633,15 +1076,15 @@ export default function Agenda() {
                 isMobile && "space-y-1.5 w-full overflow-x-hidden"
               )}>
                 {filteredAppointments
-                  .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
-                  .map((appointment) => (
-                    <AppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                      onStatusChange={handleStatusChange}
-                      onPaymentChange={handlePaymentChange}
+                .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
+                .map((appointment) => (
+                  <AppointmentCard
+                    key={appointment.id}
+                    appointment={appointment}
+                    onStatusChange={handleStatusChange}
+                    onPaymentChange={handlePaymentChange}
                       compact={isMobile} // Mobile usa modo compacto
-                    />
+                  />
                   ))}
               </div>
             )}

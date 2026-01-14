@@ -344,7 +344,14 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row gap-4 lg:gap-6 w-full">
           {/* Today's Appointments */}
           <div className="flex-1 space-y-4 min-w-0">
-            <h2 className="text-lg font-semibold text-foreground">Consultas de Hoje</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              Consultas de Hoje
+              {todayAppointments && todayAppointments.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({todayAppointments.length})
+                </span>
+              )}
+            </h2>
             
             {appointmentsLoading ? (
               <div className="space-y-3">
@@ -365,17 +372,34 @@ export default function Dashboard() {
                 </button>
               </div>
             ) : (
-              <div className={`grid grid-cols-1 ${getGridCols()} gap-4 auto-rows-fr`}>
-                {todayAppointments?.map((appointment) => (
-                  <div key={appointment.id} className="min-w-0 h-full flex">
-                    <AppointmentCard
-                      appointment={appointment}
-                      onStatusChange={handleStatusChange}
-                      onPaymentChange={handlePaymentChange}
-                    />
+              <>
+                <div className={`grid grid-cols-1 ${getGridCols()} gap-4 auto-rows-fr`}>
+                  {todayAppointments?.slice(0, 5).map((appointment) => (
+                    <div key={appointment.id} className="min-w-0 h-full flex">
+                      <AppointmentCard
+                        appointment={appointment}
+                        onStatusChange={handleStatusChange}
+                        onPaymentChange={handlePaymentChange}
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                {todayAppointments && todayAppointments.length > 5 && (
+                  <div className="mt-4 p-4 rounded-xl bg-muted/50 border border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground text-center sm:text-left">
+                      ... e mais <span className="font-semibold text-foreground">{todayAppointments.length - 5}</span> agendamento{todayAppointments.length - 5 > 1 ? 's' : ''}
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/agenda')}
+                      className="w-full sm:w-auto"
+                    >
+                      Ver todos na Agenda →
+                    </Button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
 

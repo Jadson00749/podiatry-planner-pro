@@ -188,3 +188,5 @@ WHERE user_id IN (
 
 **💡 Dica**: Salve os scripts SQL como favoritos no Supabase SQL Editor para acesso rápido!
 
+
+

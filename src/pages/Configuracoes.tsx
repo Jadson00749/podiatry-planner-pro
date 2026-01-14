@@ -10,10 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Clock, Calendar as CalendarIcon, HelpCircle, Building2, Bell, Mail, MessageCircle, Database, Download, Upload, AlertTriangle, Search, Plus, Edit, Trash, Stethoscope, User } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, HelpCircle, Building2, Bell, Mail, MessageCircle, Database, Download, Upload, AlertTriangle, Search, Plus, Edit, Trash, Stethoscope, User, FileText, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPhone } from '@/lib/phone';
 import { formatCNPJ } from '@/lib/cnpj';
@@ -30,7 +31,6 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlan } from '@/hooks/usePlan';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
@@ -42,7 +42,9 @@ export default function Configuracoes() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { canUseBackup } = usePlan();
   const [showTourDialog, setShowTourDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('perfil');
   const { data: clients } = useClients();
   const { data: appointments } = useAppointments();
   const { data: procedures } = useProcedures();
@@ -52,22 +54,6 @@ export default function Configuracoes() {
   const deleteProcedure = useDeleteProcedure();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isRestoring, setIsRestoring] = useState(false);
-  const { 
-    canUseBackup, 
-    canCreateProcedure, 
-    maxProcedures 
-  } = usePlan();
-  
-  // Estado para controlar a aba ativa (com persistência)
-  const [activeTab, setActiveTab] = useState(() => {
-    const saved = localStorage.getItem('configuracoes_active_tab');
-    return saved || 'perfil';
-  });
-
-  // Salvar aba ativa no localStorage quando mudar
-  useEffect(() => {
-    localStorage.setItem('configuracoes_active_tab', activeTab);
-  }, [activeTab]);
   
   // Estados para gerenciamento de procedimentos
   const [procedureSearch, setProcedureSearch] = useState('');
@@ -425,25 +411,6 @@ export default function Configuracoes() {
   // Salvar procedimento (criar ou atualizar)
   const handleSaveProcedure = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Verificar limite de procedimentos (apenas ao criar novo)
-    if (!editingProcedure) {
-      const currentCount = procedures?.length || 0;
-      if (!canCreateProcedure(currentCount)) {
-        toast({
-          title: 'Limite de procedimentos atingido',
-          description: `Você atingiu o limite de ${maxProcedures === -1 ? '∞' : maxProcedures} procedimentos do seu plano. Faça upgrade para mais procedimentos.`,
-          variant: 'destructive',
-          action: (
-            <Button size="sm" onClick={() => navigate('/planos')}>
-              Ver Planos
-            </Button>
-          ),
-        });
-        return;
-      }
-    }
-    
     try {
       const price = parseFloat(procedureFormData.default_price) || 0;
       const duration = procedureFormData.duration_minutes ? parseInt(procedureFormData.duration_minutes) : null;
@@ -507,76 +474,69 @@ export default function Configuracoes() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Mobile: Select Dropdown */}
+          {/* Select para Mobile */}
           {isMobile ? (
-            <div className="mb-4">
-              <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione uma seção">
-                    {activeTab === 'perfil' && 'Perfil e Clínica'}
-                    {activeTab === 'horarios' && 'Horários'}
-                    {activeTab === 'procedimentos' && 'Procedimentos'}
-                    {activeTab === 'sistema' && 'Sistema'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="perfil">
-                    <span className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Perfil e Clínica
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="horarios">
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Horários
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="procedimentos">
-                    <span className="flex items-center gap-2">
-                      <Stethoscope className="h-4 w-4" />
-                      Procedimentos
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="sistema">
-                    <span className="flex items-center gap-2">
-                      <Database className="h-4 w-4" />
-                      Sistema
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full mb-6">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="perfil">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Perfil e Clínica</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="horarios">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>Horários</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="procedimentos">
+                  <div className="flex items-center gap-2">
+                    <Stethoscope className="h-4 w-4" />
+                    <span>Procedimentos</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="sistema">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    <span>Sistema</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           ) : (
-            /* Desktop: Tabs */
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="perfil" className="flex items-center justify-center gap-2">
+            /* Tabs para Desktop */
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+              <TabsTrigger value="perfil" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
-                <span>Perfil e Clínica</span>
+                <span className="hidden sm:inline">Perfil e Clínica</span>
+                <span className="sm:hidden">Perfil</span>
               </TabsTrigger>
-              <TabsTrigger value="horarios" className="flex items-center justify-center gap-2">
+              <TabsTrigger value="horarios" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                <span>Horários</span>
+                Horários
               </TabsTrigger>
-              <TabsTrigger value="procedimentos" className="flex items-center justify-center gap-2">
+              <TabsTrigger value="procedimentos" className="flex items-center gap-2">
                 <Stethoscope className="h-4 w-4" />
-                <span>Procedimentos</span>
+                Procedimentos
               </TabsTrigger>
-              <TabsTrigger value="sistema" className="flex items-center justify-center gap-2">
+              <TabsTrigger value="sistema" className="flex items-center gap-2">
                 <Database className="h-4 w-4" />
-                <span>Sistema</span>
+                Sistema
               </TabsTrigger>
             </TabsList>
           )}
 
-          {/* Aba: Perfil e Clínica */}
-          <TabsContent value="perfil" className="mt-6 space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Perfil e Clínica</h2>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* TAB: Perfil e Clínica */}
+          <TabsContent value="perfil" className="space-y-6 mt-6">
+            <div className="flex items-center gap-2 mb-6">
+              <User className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Perfil e Clínica</h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="rounded-xl bg-card border border-border p-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">Perfil</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -744,7 +704,7 @@ export default function Configuracoes() {
                   <Label>Facebook</Label>
                   <Input 
                     type="text"
-                    placeholder="clinica.podologia"
+                    placeholder="minhaempresa"
                     value={formData.clinic_facebook} 
                     onChange={e => setFormData({...formData, clinic_facebook: e.target.value})} 
                   />
@@ -753,18 +713,16 @@ export default function Configuracoes() {
               <Button type="submit" className="gradient-primary w-full">Salvar alterações</Button>
             </form>
           </div>
-              </div>
             </div>
           </TabsContent>
 
-          {/* Aba: Horários e Notificações */}
-          <TabsContent value="horarios" className="mt-6 space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Horários e Notificações</h2>
-              </div>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* TAB: Horários e Notificações */}
+          <TabsContent value="horarios" className="space-y-6 mt-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Clock className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Horários</h2>
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {/* Horários de Funcionamento */}
             <div className="rounded-xl bg-card border border-border p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -1022,18 +980,16 @@ export default function Configuracoes() {
                 <Button type="submit" className="gradient-primary w-full">Salvar alterações</Button>
               </form>
             </div>
-              </div>
             </div>
           </TabsContent>
 
-          {/* Aba: Procedimentos */}
-          <TabsContent value="procedimentos" className="mt-6 space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Stethoscope className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Procedimentos</h2>
-              </div>
-              <div className="rounded-xl bg-card border border-border p-6">
+          {/* TAB: Procedimentos */}
+          <TabsContent value="procedimentos" className="space-y-6 mt-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Stethoscope className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Procedimentos</h2>
+            </div>
+            <div className="rounded-xl bg-card border border-border p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Stethoscope className="h-5 w-5 text-primary" />
               Gerenciar Procedimentos
@@ -1079,7 +1035,7 @@ export default function Configuracoes() {
                       <Input
                         value={procedureFormData.name}
                         onChange={(e) => setProcedureFormData({ ...procedureFormData, name: e.target.value })}
-                        placeholder="Ex: Consulta Preventiva"
+                        placeholder="Ex: Corte de Cabelo, Limpeza de Pele, Consulta"
                         required
                       />
                     </div>
@@ -1225,18 +1181,35 @@ export default function Configuracoes() {
               </div>
             )}
           </div>
-              </div>
             </div>
           </TabsContent>
 
-          {/* Aba: Sistema */}
-          <TabsContent value="sistema" className="mt-6 space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Sistema</h2>
+          {/* TAB: Sistema */}
+          <TabsContent value="sistema" className="space-y-6 mt-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Database className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Sistema</h2>
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            {/* Modelos de Anamnese - NOVO */}
+            <div className="rounded-xl bg-card border border-border p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground">Modelos de Anamnese</h3>
               </div>
-              <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+              <p className="text-sm text-muted-foreground mb-4">
+                Crie e personalize fichas de anamnese para seu negócio
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/modelos-anamnese')}
+                className="w-full gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Gerenciar Modelos
+              </Button>
+            </div>
+
             {/* Aparência */}
             <div className="rounded-xl bg-card border border-border p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Aparência</h3>
@@ -1280,12 +1253,12 @@ export default function Configuracoes() {
               </p>
 
               {!canUseBackup() ? (
-                <UpgradePrompt 
-                  feature="Backup e Restauração" 
+                <UpgradePrompt
+                  feature="Backup e Restauração"
                   requiredPlan="professional"
                 />
               ) : (
-              <div className="space-y-4">
+                <div className="space-y-4">
                 {/* Exportar Backup */}
                 <div className="rounded-lg bg-muted/50 border border-border p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
@@ -1385,9 +1358,8 @@ export default function Configuracoes() {
               </div>
               )}
             </div>
-          </div>
-        </div>
-      </TabsContent>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 

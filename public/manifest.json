@@ -1,7 +1,7 @@
 {
-  "name": "PodoAgenda - Gestão Podológica",
-  "short_name": "PodoAgenda",
-  "description": "Sistema completo de gestão para clínicas de podologia",
+  "name": "AgendaPro - Gestão de Agendamentos",
+  "short_name": "AgendaPro",
+  "description": "Sistema completo de gestão de agendamentos para clínicas, salões e consultórios",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -24,6 +24,9 @@
   "screenshots": [],
   "shortcuts": []
 }
+
+
+
 
 
 

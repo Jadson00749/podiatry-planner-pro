@@ -6,6 +6,7 @@ interface PlanLimits {
   maxClients: number;
   maxProcedures: number;
   exportLimit: number;
+  maxAnamnesisTemplates: number;
   hasReports: boolean;
   hasAnamnesis: boolean;
   hasBackup: boolean;
@@ -17,6 +18,7 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxClients: 50,
     maxProcedures: 10,
     exportLimit: 0,
+    maxAnamnesisTemplates: 0, // Sem anamnese
     hasReports: false,
     hasAnamnesis: false,
     hasBackup: false,
@@ -26,6 +28,7 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxClients: 200,
     maxProcedures: 20,
     exportLimit: 10,
+    maxAnamnesisTemplates: 3, // 3 templates personalizados
     hasReports: true,
     hasAnamnesis: true,
     hasBackup: true,
@@ -35,6 +38,7 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxClients: -1, // ilimitado
     maxProcedures: -1, // ilimitado
     exportLimit: -1, // ilimitado
+    maxAnamnesisTemplates: -1, // Templates ilimitados
     hasReports: true,
     hasAnamnesis: true,
     hasBackup: true,
@@ -91,6 +95,13 @@ export function usePlan() {
     return currentCount < limits.maxProcedures;
   };
 
+  const canCreateAnamnesisTemplate = (currentCount: number) => {
+    if (isTrial) return true;
+    if (!limits.hasAnamnesis) return false; // Plano não tem acesso
+    if (limits.maxAnamnesisTemplates === -1) return true; // ilimitado
+    return currentCount < limits.maxAnamnesisTemplates;
+  };
+
   // Obter limites reais (usando do banco ou padrão)
   const maxClients = profile?.max_clients !== null && profile?.max_clients !== undefined
     ? profile.max_clients
@@ -119,20 +130,23 @@ export function usePlan() {
     canExport,
     canCreateClient,
     canCreateProcedure,
+    canCreateAnamnesisTemplate,
     // Limites
     maxClients,
     maxProcedures,
     exportCount,
     exportLimit,
+    maxAnamnesisTemplates: limits.maxAnamnesisTemplates,
     // Helpers
-    isUnlimited: (type: 'clients' | 'procedures' | 'exports') => {
+    isUnlimited: (type: 'clients' | 'procedures' | 'exports' | 'templates') => {
       if (isTrial) return true;
       if (type === 'clients') return maxClients === -1;
       if (type === 'procedures') return maxProcedures === -1;
       if (type === 'exports') return exportLimit === -1;
+      if (type === 'templates') return limits.maxAnamnesisTemplates === -1;
       return false;
     },
-    getRemaining: (type: 'clients' | 'procedures' | 'exports', current: number) => {
+    getRemaining: (type: 'clients' | 'procedures' | 'exports' | 'templates', current: number) => {
       if (isTrial) return 'Ilimitado (Trial)';
       if (type === 'clients') {
         if (maxClients === -1) return 'Ilimitado';
@@ -145,6 +159,10 @@ export function usePlan() {
       if (type === 'exports') {
         if (exportLimit === -1) return 'Ilimitado';
         return Math.max(0, exportLimit - exportCount);
+      }
+      if (type === 'templates') {
+        if (limits.maxAnamnesisTemplates === -1) return 'Ilimitado';
+        return Math.max(0, limits.maxAnamnesisTemplates - current);
       }
       return 0;
     },

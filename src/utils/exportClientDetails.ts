@@ -312,7 +312,7 @@ export function exportClientDetails(options: ExportOptions) {
       doc.setTextColor(100, 100, 100);
       doc.setFont(undefined, 'normal');
       doc.text(
-        `Página ${i} de ${pageCount} - PodoAgenda`,
+        `Página ${i} de ${pageCount} - AgendaPro`,
         105,
         doc.internal.pageSize.height - 10,
         { align: 'center' }

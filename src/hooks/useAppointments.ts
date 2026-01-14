@@ -24,6 +24,7 @@ export interface Appointment {
     name: string;
     phone: string | null;
     whatsapp: string | null;
+    avatar_url: string | null;
   };
   procedures?: {
     id: string;
@@ -43,7 +44,7 @@ export function useAppointments(date?: string) {
         .from('appointments')
         .select(`
           *,
-          clients (id, name, phone, whatsapp),
+          clients (id, name, phone, whatsapp, avatar_url),
           procedures (id, name)
         `)
         .eq('profile_id', profile.id)

@@ -83,7 +83,7 @@ export function OnboardingChecklist() {
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h2 className="text-xl font-bold text-foreground mb-1">
-            Bem-vindo ao PodoAgenda! 👋
+            Bem-vindo ao AgendaPro! 👋
           </h2>
           <p className="text-sm text-muted-foreground">
             Complete os passos abaixo para começar a usar o sistema

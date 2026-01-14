@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Appointment } from '@/hooks/useAppointments';
 import { generateWhatsAppLink, generateAppointmentReminderMessage } from '@/lib/whatsapp';
 import { useProfile } from '@/hooks/useProfile';
+import { ClientAvatar } from '@/components/ClientAvatar';
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -58,9 +59,11 @@ export function AppointmentCard({
       <div className="p-2.5 sm:p-3 rounded-lg bg-card border border-border hover:shadow-md transition-shadow w-full max-w-full overflow-hidden">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <User className="w-4 h-4 text-primary" />
-            </div>
+            <ClientAvatar 
+              avatarUrl={appointment.clients?.avatar_url}
+              name={appointment.clients?.name || 'Sem nome'}
+              size="sm"
+            />
             <div className="flex-1 min-w-0 overflow-hidden">
               <p className="font-medium text-sm text-foreground truncate">
                 {appointment.clients?.name || 'Sem nome'}
@@ -147,9 +150,11 @@ export function AppointmentCard({
     <div className="p-4 rounded-xl bg-card border border-border hover:shadow-lg transition-all duration-300 h-full flex flex-col w-full">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="w-6 h-6 text-primary" />
-          </div>
+          <ClientAvatar 
+            avatarUrl={appointment.clients?.avatar_url}
+            name={appointment.clients?.name || 'Sem nome'}
+            size="md"
+          />
           <div>
             <h4 className="font-semibold text-foreground">
               {appointment.clients?.name}
@@ -249,3 +254,4 @@ export function AppointmentCard({
     </div>
   );
 }
+

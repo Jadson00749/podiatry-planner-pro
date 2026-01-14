@@ -5,3 +5,5 @@ UPDATE public.profiles
 SET export_limit = 10
 WHERE subscription_plan = 'professional' AND export_limit = 5;
 
+
+

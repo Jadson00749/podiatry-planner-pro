@@ -16,6 +16,8 @@ import ClienteDetalhes from "./pages/ClienteDetalhes";
 import Financeiro from "./pages/Financeiro";
 import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
+import ModelosAnamnese from "./pages/ModelosAnamnese";
+import TemplateEditor from "./pages/TemplateEditor";
 import Notificacoes from "./pages/Notificacoes";
 import Planos from "./pages/Planos";
 import NotFound from "./pages/NotFound";
@@ -42,6 +44,8 @@ const App = () => (
                 <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
                 <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+                <Route path="/modelos-anamnese" element={<ProtectedRoute><ModelosAnamnese /></ProtectedRoute>} />
+                <Route path="/template-editor" element={<ProtectedRoute><TemplateEditor /></ProtectedRoute>} />
                 <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
                 <Route path="/planos" element={<ProtectedRoute><Planos /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

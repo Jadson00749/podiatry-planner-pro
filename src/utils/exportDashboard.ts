@@ -209,7 +209,7 @@ export function exportDashboard(options: ExportOptions) {
     doc.setFont(undefined, 'normal');
     const pageCount = doc.getNumberOfPages();
     doc.text(
-      `Página 1 de ${pageCount} - PodoAgenda`,
+      `Página 1 de ${pageCount} - AgendaPro`,
       105,
       doc.internal.pageSize.height - 10,
       { align: 'center' }
@@ -218,6 +218,9 @@ export function exportDashboard(options: ExportOptions) {
     doc.save(`${fileName}.pdf`);
   }
 }
+
+
+
 
 
 

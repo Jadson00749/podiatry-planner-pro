@@ -144,7 +144,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           )}
           <div>
             <h1 className="font-bold text-lg text-sidebar-foreground">
-              {profile?.clinic_name || 'PodoAgenda'}
+              {profile?.clinic_name || 'AgendaPro'}
             </h1>
             <p className="text-xs text-muted-foreground">
               {profile?.clinic_name ? 'Gestão Clínica' : 'Gestão Clínica'}
@@ -277,7 +277,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             )}
             <span className="font-bold text-foreground">
-              {profile?.clinic_name || 'PodoAgenda'}
+              {profile?.clinic_name || 'AgendaPro'}
             </span>
           </Link>
           

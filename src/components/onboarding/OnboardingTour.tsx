@@ -17,7 +17,7 @@ interface TourStep {
 const tourSteps: TourStep[] = [
   {
     id: 'welcome',
-    title: 'Bem-vindo ao PodoAgenda! 🎉',
+    title: 'Bem-vindo ao AgendaPro! 🎉',
     description: 'Vamos te guiar pelos primeiros passos para configurar sua clínica. Este tutorial leva apenas 2 minutos!',
     position: 'bottom',
   },
