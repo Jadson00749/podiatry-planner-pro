@@ -127,3 +127,5 @@ GRANT EXECUTE ON FUNCTION public.send_appointment_confirmation() TO postgres;
 
 
 
+
+

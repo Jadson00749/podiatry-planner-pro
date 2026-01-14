@@ -461,7 +461,7 @@ export default function Relatorios() {
             <div className="flex justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 text-xs sm:text-sm">
+                  <Button variant="outline" className="gap-2 text-xs sm:text-sm cursor-pointer">
                     <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span className="hidden sm:inline">Exportar</span>
                     <span className="sm:hidden">Exportar</span>
@@ -639,7 +639,7 @@ export default function Relatorios() {
             <div className="flex justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 text-xs sm:text-sm">
+                  <Button variant="outline" className="gap-2 text-xs sm:text-sm cursor-pointer">
                     <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                     Exportar
                   </Button>
@@ -759,7 +759,7 @@ export default function Relatorios() {
             <div className="flex justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 text-xs sm:text-sm">
+                  <Button variant="outline" className="gap-2 text-xs sm:text-sm cursor-pointer">
                     <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                     Exportar
                   </Button>

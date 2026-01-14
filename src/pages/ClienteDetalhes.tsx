@@ -26,8 +26,9 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportClientDetails } from '@/utils/exportClientDetails';
+import { exportAnamnesisToPDF } from '@/utils/exportAnamnesis';
 import { usePlan } from '@/hooks/usePlan';
-import { useUpdateProfile } from '@/hooks/useProfile';
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { ImageUpload } from '@/components/ImageUpload';
 
@@ -43,6 +44,7 @@ export default function ClienteDetalhes() {
   const updateAppointment = useUpdateAppointment();
   const updateClient = useUpdateClient();
   const { toast } = useToast();
+  const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
   const { 
     canUseAnamnesis, 
@@ -351,6 +353,70 @@ export default function ClienteDetalhes() {
     }
   };
 
+  const handleExportAnamnesis = () => {
+    // Verificar se pode exportar (controle de plano)
+    if (!canExport()) {
+      toast({
+        title: 'Limite de exportações atingido',
+        description: `Você usou ${exportCount}/${exportLimit === -1 ? '∞' : exportLimit} exportações. Faça upgrade para exportações ilimitadas.`,
+        variant: 'destructive',
+        action: (
+          <Button size="sm" onClick={() => navigate('/planos')}>
+            Ver Planos
+          </Button>
+        ),
+      });
+      return;
+    }
+
+    if (!client || !anamnesis) {
+      toast({ variant: 'destructive', title: 'Dados incompletos para exportar' });
+      return;
+    }
+
+    // Usar template_id da anamnese se selectedTemplateId estiver vazio
+    const templateIdToUse = selectedTemplateId || anamnesis?.template_id;
+    
+    // Verificar se é anamnese no formato antigo (sem template)
+    if (!templateIdToUse) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Anamnese no formato antigo',
+        description: 'Esta anamnese foi criada no formato antigo. Edite e salve novamente para poder exportar em PDF.' 
+      });
+      return;
+    }
+
+    // Usar dados da anamnese se anamnesisFormData estiver vazio
+    const answersToUse = Object.keys(anamnesisFormData).length > 0 
+      ? anamnesisFormData 
+      : (anamnesis?.dynamic_answers as Record<string, any> || {});
+
+    if (!templates) {
+      toast({ variant: 'destructive', title: 'Templates não carregados' });
+      return;
+    }
+
+    const template = templates.find(t => t.id === templateIdToUse);
+    if (!template) {
+      toast({ variant: 'destructive', title: 'Template não encontrado' });
+      return;
+    }
+
+    try {
+      exportAnamnesisToPDF({
+        client,
+        template,
+        answers: answersToUse,
+        clinicName: profile?.clinic_name || 'AgendaPro',
+        lastUpdate: anamnesis.updated_at,
+      });
+      toast({ title: 'Anamnese exportada com sucesso!' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erro ao exportar anamnese' });
+    }
+  };
+
   const handleExport = async (format: 'excel' | 'pdf') => {
     // Verificar se pode exportar
     if (!canExport()) {
@@ -461,7 +527,7 @@ export default function ClienteDetalhes() {
           <div className="flex-shrink-0 sm:self-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                <Button variant="outline" className="gap-2 w-full sm:w-auto cursor-pointer">
                   <Download className="h-4 w-4" />
                   Exportar
                 </Button>
@@ -816,27 +882,42 @@ export default function ClienteDetalhes() {
                   )}
                 </div>
                 {!isEditingAnamnesis && (
-                  <Button 
-                    variant={hasAnamnesis ? "outline" : "default"}
-                    size="sm"
-                    onClick={hasAnamnesis ? handleEditAnamnesis : handleCreateAnamnesis}
-                    className={cn(
-                      hasAnamnesis ? "" : "gradient-primary",
-                      "w-full sm:w-auto"
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    {hasAnamnesis && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportAnamnesis}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Exportar PDF</span>
+                        <span className="sm:hidden">PDF</span>
+                      </Button>
                     )}
-                  >
-                    {hasAnamnesis ? (
-                      <>
-                        <Edit2 className="h-4 w-4 mr-2" />
-                        Editar anamnese
-                      </>
-                    ) : (
-                      <>
-                        <Edit2 className="h-4 w-4 mr-2" />
-                        Criar anamnese
-                      </>
-                    )}
-                  </Button>
+                    <Button 
+                      variant={hasAnamnesis ? "outline" : "default"}
+                      size="sm"
+                      onClick={hasAnamnesis ? handleEditAnamnesis : handleCreateAnamnesis}
+                      className={cn(
+                        hasAnamnesis ? "" : "gradient-primary",
+                        "flex-1 sm:flex-none"
+                      )}
+                    >
+                      {hasAnamnesis ? (
+                        <>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          <span className="hidden sm:inline">Editar anamnese</span>
+                          <span className="sm:hidden">Editar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Criar anamnese
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -890,6 +971,13 @@ export default function ClienteDetalhes() {
                           template={templates?.find(t => t.id === selectedTemplateId)!}
                           initialData={anamnesisFormData}
                           onSubmit={handleSaveAnamnesisForm}
+                          onCancel={() => {
+                            setIsEditingAnamnesis(false);
+                            // Restaurar dados originais se cancelar
+                            if (anamnesis?.dynamic_answers) {
+                              setAnamnesisFormData(anamnesis.dynamic_answers as Record<string, any>);
+                            }
+                          }}
                           isLoading={createAnamnesis.isPending || updateAnamnesis.isPending}
                         />
                       </div>

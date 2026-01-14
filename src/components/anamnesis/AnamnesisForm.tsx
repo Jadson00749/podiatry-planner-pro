@@ -24,6 +24,7 @@ interface AnamnesisFormProps {
   template: AnamnesisTemplate;
   initialData?: Record<string, any>;
   onSubmit: (data: Record<string, any>) => void;
+  onCancel?: () => void;
   isLoading?: boolean;
 }
 
@@ -31,6 +32,7 @@ export function AnamnesisForm({
   template, 
   initialData = {}, 
   onSubmit,
+  onCancel,
   isLoading = false 
 }: AnamnesisFormProps) {
   const [formData, setFormData] = useState<Record<string, any>>(initialData);
@@ -236,6 +238,11 @@ export function AnamnesisForm({
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+            Cancelar
+          </Button>
+        )}
         <Button type="submit" disabled={isLoading}>
           {isLoading ? 'Salvando...' : 'Salvar Anamnese'}
         </Button>
@@ -243,4 +250,6 @@ export function AnamnesisForm({
     </form>
   );
 }
+
+
 

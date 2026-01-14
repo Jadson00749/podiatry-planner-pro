@@ -263,7 +263,7 @@ export default function ModelosAnamnese() {
               Modelos personalizados que você criou
             </p>
           </div>
-          <Button onClick={handleCreateFromScratch} className="shrink-0">
+          <Button onClick={handleCreateFromScratch} className="shrink-0 cursor-pointer">
             <Plus className="w-4 h-4 mr-2" />
             Criar do zero
           </Button>
@@ -294,7 +294,7 @@ export default function ModelosAnamnese() {
             <p className="text-muted-foreground mb-4">
               Você ainda não tem modelos personalizados
             </p>
-            <Button onClick={handleCreateFromScratch} variant="outline">
+            <Button onClick={handleCreateFromScratch} variant="outline" className="cursor-pointer">
               <Plus className="w-4 h-4 mr-2" />
               Criar meu primeiro modelo
             </Button>

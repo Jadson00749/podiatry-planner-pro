@@ -376,7 +376,7 @@ export default function Financeiro() {
             {appointments && appointments.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2 cursor-pointer">
                     <Download className="h-4 w-4" />
                     Exportar
                   </Button>

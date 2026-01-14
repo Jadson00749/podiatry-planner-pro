@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useClients, useCreateClient, useDeleteClient } from '@/hooks/useClients';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +45,7 @@ export default function Clientes() {
   const isMobile = useIsMobile();
 
   const [formData, setFormData] = useState({ name: '', phone: '', whatsapp: '', email: '', address: '', notes: '' });
+  const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
   
   // Layout preferences
   const [clientLayout, setClientLayout] = useState<ClientLayout>(() => {
@@ -196,6 +198,21 @@ export default function Clientes() {
     }
   };
 
+  const handleDeleteClient = () => {
+    if (!clientToDelete) return;
+    
+    deleteClient.mutate(clientToDelete.id, {
+      onSuccess: () => {
+        toast({ title: 'Cliente excluído com sucesso!' });
+        setClientToDelete(null);
+      },
+      onError: () => {
+        toast({ variant: 'destructive', title: 'Erro ao excluir cliente' });
+        setClientToDelete(null);
+      },
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -249,7 +266,7 @@ export default function Clientes() {
             {clients && clients.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2 cursor-pointer">
                     <Download className="h-4 w-4" />
                     Exportar
                   </Button>
@@ -533,7 +550,7 @@ export default function Clientes() {
                             </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 cursor-pointer">
                                   <MoreVertical className="h-3 w-3" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -546,7 +563,7 @@ export default function Clientes() {
                                   Detalhes
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => deleteClient.mutate(client.id)} 
+                                  onClick={() => setClientToDelete({ id: client.id, name: client.name })} 
                                   className="text-destructive cursor-pointer"
                                 >
                                   <Trash className="h-4 w-4 mr-2" />
@@ -618,7 +635,7 @@ export default function Clientes() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="cursor-pointer"><MoreVertical className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem 
@@ -629,7 +646,7 @@ export default function Clientes() {
                       Detalhes
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                    onClick={() => deleteClient.mutate(client.id)} 
+                    onClick={() => setClientToDelete({ id: client.id, name: client.name })} 
                     className="text-destructive cursor-pointer">
                       <Trash className="h-4 w-4 mr-2" />
                       Excluir
@@ -670,6 +687,29 @@ export default function Clientes() {
           </div>
         )}
       </div>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <span className="font-semibold text-foreground">{clientToDelete?.name}</span>?
+              <br /><br />
+              Esta ação não pode ser desfeita. Todos os agendamentos e informações relacionadas a este cliente também serão excluídos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteClient}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

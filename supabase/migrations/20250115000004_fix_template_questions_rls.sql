@@ -69,3 +69,5 @@ CREATE POLICY "Users can delete questions from their templates"
 
 COMMENT ON TABLE public.template_questions IS 'Perguntas dos templates com RLS corrigido para usar profiles.user_id';
 
+
+

@@ -50,3 +50,5 @@ CREATE POLICY "Users can delete their own templates"
 
 COMMENT ON TABLE public.anamnesis_templates IS 'Templates de anamnese com RLS corrigido para usar profiles.user_id';
 
+
+

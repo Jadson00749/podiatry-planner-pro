@@ -24,3 +24,5 @@ COMMENT ON COLUMN public.anamnesis.responses IS 'Respostas dinâmicas baseadas n
 --   }
 -- }
 
+
+

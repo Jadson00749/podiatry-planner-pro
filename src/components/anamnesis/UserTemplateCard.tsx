@@ -72,7 +72,7 @@ export function UserTemplateCard({
           variant="ghost"
           size="sm"
           onClick={onPreview}
-          className="h-8 text-xs flex-1"
+          className="h-8 text-xs flex-1 cursor-pointer"
         >
           <Eye className="w-3.5 h-3.5 mr-1.5" />
           Ver
@@ -82,7 +82,7 @@ export function UserTemplateCard({
           variant="outline"
           size="sm"
           onClick={onEdit}
-          className="h-8 text-xs flex-1"
+          className="h-8 text-xs flex-1 cursor-pointer"
         >
           <Edit2 className="w-3.5 h-3.5 mr-1.5" />
           Editar
@@ -90,24 +90,24 @@ export function UserTemplateCard({
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 px-3">
+            <Button variant="outline" size="sm" className="h-8 px-3 cursor-pointer">
               ⋯
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onDuplicate}>
+            <DropdownMenuItem onClick={onDuplicate} className="cursor-pointer">
               <Copy className="w-4 h-4 mr-2" />
               Duplicar
             </DropdownMenuItem>
             {!isDefault && (
-              <DropdownMenuItem onClick={onSetDefault}>
+              <DropdownMenuItem onClick={onSetDefault} className="cursor-pointer">
                 <Star className="w-4 h-4 mr-2" />
                 Definir como padrão
               </DropdownMenuItem>
             )}
             <DropdownMenuItem 
               onClick={onDelete}
-              className="text-destructive focus:text-destructive"
+              className="text-destructive focus:text-destructive cursor-pointer"
             >
               <Trash className="w-4 h-4 mr-2" />
               Excluir
@@ -118,4 +118,6 @@ export function UserTemplateCard({
     </Card>
   );
 }
+
+
 

@@ -66,7 +66,7 @@ export function SystemTemplateCard({
                 variant="ghost"
                 size="sm"
                 onClick={onPreview}
-                className="h-8 text-xs"
+                className="h-8 text-xs cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5 mr-1.5" />
                 Ver
@@ -75,7 +75,7 @@ export function SystemTemplateCard({
                 variant="outline"
                 size="sm"
                 onClick={onCopy}
-                className="h-8 text-xs"
+                className="h-8 text-xs cursor-pointer"
               >
                 <Copy className="w-3.5 h-3.5 mr-1.5" />
                 Usar
@@ -87,4 +87,6 @@ export function SystemTemplateCard({
     </Card>
   );
 }
+
+
 

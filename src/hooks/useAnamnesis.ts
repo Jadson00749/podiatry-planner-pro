@@ -73,13 +73,16 @@ export function useCreateAnamnesis() {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['anamnesis', variables.client_id] });
+      // Invalidar todas as queries de anamnese para este cliente
+      queryClient.invalidateQueries({ queryKey: ['anamnesis', profile?.id, variables.client_id] });
+      queryClient.invalidateQueries({ queryKey: ['all-anamnesis'] });
     },
   });
 }
 
 export function useUpdateAnamnesis() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Anamnesis> & { id: string }) => {
@@ -95,7 +98,9 @@ export function useUpdateAnamnesis() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['anamnesis', data.client_id] });
+      // Invalidar todas as queries de anamnese para este cliente
+      queryClient.invalidateQueries({ queryKey: ['anamnesis', profile?.id, data.client_id] });
+      queryClient.invalidateQueries({ queryKey: ['all-anamnesis'] });
     },
   });
 }

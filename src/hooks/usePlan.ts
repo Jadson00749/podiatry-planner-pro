@@ -18,9 +18,9 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxClients: 50,
     maxProcedures: 10,
     exportLimit: 0,
-    maxAnamnesisTemplates: 0, // Sem anamnese
+    maxAnamnesisTemplates: 1, // 1 template personalizado
     hasReports: false,
-    hasAnamnesis: false,
+    hasAnamnesis: true,
     hasBackup: false,
     hasEmailNotifications: false,
   },

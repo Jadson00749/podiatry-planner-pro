@@ -28,14 +28,15 @@ const PLANOS = [
         'Procedimentos (até 10)',
         'Controle financeiro básico',
         'Dashboard com estatísticas',
+        'Anamnese: 1 template personalizado',
         'Notificações in-app',
         'Lembrete WhatsApp (manual)',
         'Tema claro/escuro',
       ],
       excluded: [
         'Relatórios e gráficos',
-        'Exportações ilimitadas',
-        'Anamnese: Templates ilimitados',
+        'Exportações (PDF/Excel)',
+        'Anamnese: Múltiplos templates',
         'Backup e restauração',
       ],
     },
@@ -43,7 +44,7 @@ const PLANOS = [
   {
     id: 'professional' as const,
     name: 'Profissional',
-    price: 'R$ 69',
+    price: 'R$ 59',
     period: '/mês',
     description: 'Mais popular',
     icon: Rocket,
@@ -57,7 +58,7 @@ const PLANOS = [
         'Relatórios completos',
         'Gráficos avançados',
         'Exportações (10/mês)',
-        'Anamnese: 3 templates',
+        'Anamnese: 3 templates personalizados',
         'Backup manual (JSON)',
         'Clientes (até 200)',
         'Procedimentos (até 20)',
@@ -73,7 +74,7 @@ const PLANOS = [
   {
     id: 'premium' as const,
     name: 'Premium',
-    price: 'R$ 129',
+    price: 'R$ 89',
     period: '/mês',
     description: 'Máxima performance',
     icon: Crown,
@@ -83,6 +84,7 @@ const PLANOS = [
     features: {
       included: [
         'Tudo do plano Profissional',
+        'Anamnese: Templates ilimitados',
         'Exportações ilimitadas',
         'Backup completo + restauração',
         'Clientes ilimitados',
@@ -180,15 +182,24 @@ export default function Planos() {
                     <CarouselItem key={plano.id} className="pl-2 basis-[90%]">
                       <Card
                         className={cn(
-                          'relative transition-all h-full',
+                          'relative transition-all h-full border border-border',
                           plano.recommended && 'border-2 border-primary shadow-md',
-                          isCurrentPlan && 'ring-2 ring-primary ring-offset-2'
+                          isCurrentPlan && 'ring-2 ring-primary ring-offset-2',
+                          !plano.recommended && !isCurrentPlan && plano.id === 'premium' && 'border-2 border-primary shadow-md'
                         )}
                       >
                         {plano.recommended && (
                           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
                             <Badge className="bg-primary text-primary-foreground px-3 py-1 text-xs">
                               Mais Popular
+                            </Badge>
+                          </div>
+                        )}
+
+                        {!plano.recommended && !isCurrentPlan && plano.id === 'premium' && (
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
+                            <Badge className="bg-purple-600 text-white px-3 py-1 text-xs">
+                              Completo
                             </Badge>
                           </div>
                         )}
@@ -201,29 +212,29 @@ export default function Planos() {
                           </div>
                         )}
 
-                        <CardHeader className={cn('text-center pb-3', plano.bgColor, plano.recommended || isCurrentPlan ? 'pt-10' : 'pt-4')}>
-                          <div className={cn('mx-auto mb-3 p-2 rounded-full w-fit', plano.bgColor)}>
-                            <Icon className={cn('h-6 w-6', plano.color)} />
+                        <CardHeader className={cn('text-center pb-2', plano.bgColor, plano.recommended || isCurrentPlan || plano.id === 'premium' ? 'pt-10' : 'pt-3')}>
+                          <div className={cn('mx-auto mb-2 p-1.5 rounded-full w-fit', plano.bgColor)}>
+                            <Icon className={cn('h-5 w-5', plano.color)} />
                           </div>
-                          <CardTitle className="text-xl">{plano.name}</CardTitle>
+                          <CardTitle className="text-lg">{plano.name}</CardTitle>
                           <CardDescription className="text-xs">{plano.description}</CardDescription>
-                          <div className="mt-3">
-                            <span className="text-3xl font-bold text-foreground">{plano.price}</span>
+                          <div className="mt-2">
+                            <span className="text-2xl font-bold text-foreground">{plano.price}</span>
                             <span className="text-sm text-muted-foreground">{plano.period}</span>
                           </div>
                         </CardHeader>
 
-                        <CardContent className="py-3 px-4 max-h-[280px] overflow-y-auto">
-                          <ul className="space-y-2">
+                        <CardContent className="py-2 px-4 max-h-[260px] overflow-y-auto">
+                          <ul className="space-y-1.5">
                             {plano.features.included.map((feature, index) => (
                               <li key={index} className="flex items-start gap-2">
-                                <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                                <Check className="h-3.5 w-3.5 text-green-600 shrink-0 mt-0.5" />
                                 <span className="text-xs text-foreground">{feature}</span>
                               </li>
                             ))}
                             {plano.features.excluded.map((feature, index) => (
                               <li key={index} className="flex items-start gap-2 opacity-50">
-                                <X className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                                <X className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
                                 <span className="text-xs text-muted-foreground line-through">{feature}</span>
                               </li>
                             ))}
@@ -304,15 +315,24 @@ export default function Planos() {
               <Card
                 key={plano.id}
                 className={cn(
-                  'relative transition-all hover:shadow-lg',
+                  'relative transition-all hover:shadow-lg border border-border',
                   plano.recommended && 'border-2 border-primary shadow-md',
-                  isCurrentPlan && 'ring-2 ring-primary ring-offset-2'
+                  isCurrentPlan && 'ring-2 ring-primary ring-offset-2',
+                  !plano.recommended && !isCurrentPlan && plano.id === 'premium' && 'border-2 border-primary shadow-md'
                 )}
               >
                 {plano.recommended && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                     <Badge className="bg-primary text-primary-foreground px-4 py-1">
                       Mais Popular
+                    </Badge>
+                  </div>
+                )}
+
+                {!plano.recommended && !isCurrentPlan && plano.id === 'premium' && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-purple-600 text-white px-4 py-1">
+                      Completo
                     </Badge>
                   </div>
                 )}
@@ -325,29 +345,29 @@ export default function Planos() {
                   </div>
                 )}
 
-                <CardHeader className={cn('text-center pb-4', plano.bgColor)}>
-                  <div className={cn('mx-auto mb-4 p-3 rounded-full w-fit', plano.bgColor)}>
-                    <Icon className={cn('h-8 w-8', plano.color)} />
+                <CardHeader className={cn('text-center pb-3', plano.bgColor)}>
+                  <div className={cn('mx-auto mb-3 p-2 rounded-full w-fit', plano.bgColor)}>
+                    <Icon className={cn('h-6 w-6', plano.color)} />
                   </div>
-                  <CardTitle className="text-2xl">{plano.name}</CardTitle>
-                  <CardDescription>{plano.description}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold text-foreground">{plano.price}</span>
+                  <CardTitle className="text-xl">{plano.name}</CardTitle>
+                  <CardDescription className="text-sm">{plano.description}</CardDescription>
+                  <div className="mt-3">
+                    <span className="text-3xl font-bold text-foreground">{plano.price}</span>
                     <span className="text-muted-foreground">{plano.period}</span>
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <ul className="space-y-3 pt-5">
+                <CardContent className="space-y-3">
+                  <ul className="space-y-2 pt-3">
                     {plano.features.included.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <li key={index} className="flex items-start gap-2.5">
+                        <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                         <span className="text-sm text-foreground">{feature}</span>
                       </li>
                     ))}
                     {plano.features.excluded.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3 opacity-50">
-                        <X className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                      <li key={index} className="flex items-start gap-2.5 opacity-50">
+                        <X className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                         <span className="text-sm text-muted-foreground line-through">{feature}</span>
                       </li>
                     ))}
