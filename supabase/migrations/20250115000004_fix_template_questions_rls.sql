@@ -71,3 +71,9 @@ COMMENT ON TABLE public.template_questions IS 'Perguntas dos templates com RLS c
 
 
 
+
+
+
+
+
+

@@ -22,3 +22,9 @@ ADD COLUMN IF NOT EXISTS dynamic_answers JSONB DEFAULT '{}'::jsonb;
 -- Atualizar comentário
 COMMENT ON COLUMN public.anamnesis.dynamic_answers IS 'Respostas dinâmicas baseadas no template: {"question_id": {"answer": "...", "details": "..."}}';
 
+
+
+
+
+
+

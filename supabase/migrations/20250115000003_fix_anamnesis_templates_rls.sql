@@ -52,3 +52,9 @@ COMMENT ON TABLE public.anamnesis_templates IS 'Templates de anamnese com RLS co
 
 
 
+
+
+
+
+
+

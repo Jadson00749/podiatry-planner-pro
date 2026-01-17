@@ -32,6 +32,10 @@ export interface Profile {
   export_limit: number | null;
   max_clients: number | null;
   max_procedures: number | null;
+  role: string | null;
+  booking_code: string | null;
+  booking_enabled: boolean | null;
+  booking_settings: any | null;
   created_at: string;
   updated_at: string;
 }

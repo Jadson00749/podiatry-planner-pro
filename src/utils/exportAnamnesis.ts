@@ -293,3 +293,9 @@ export function exportAnamnesisToPDF(options: ExportAnamnesisOptions) {
   doc.save(fileName);
 }
 
+
+
+
+
+
+

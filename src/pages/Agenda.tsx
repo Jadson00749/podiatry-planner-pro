@@ -1086,7 +1086,7 @@ export default function Agenda() {
                       compact={isMobile} // Mobile usa modo compacto
                   />
                   ))}
-              </div>
+          </div>
             )}
           </>
         )}

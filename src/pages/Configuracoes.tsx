@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Clock, Calendar as CalendarIcon, HelpCircle, Building2, Bell, Mail, MessageCircle, Database, Download, Upload, AlertTriangle, Search, Plus, Edit, Trash, Stethoscope, User, FileText, ExternalLink } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, HelpCircle, Building2, Bell, Mail, MessageCircle, Database, Download, Upload, AlertTriangle, Search, Plus, Edit, Trash, Stethoscope, User, FileText, ExternalLink, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPhone } from '@/lib/phone';
 import { formatCNPJ } from '@/lib/cnpj';
@@ -34,6 +34,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlan } from '@/hooks/usePlan';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { BookingSettingsTab } from '@/components/BookingSettingsTab';
 
 export default function Configuracoes() {
   const { data: profile } = useProfile();
@@ -482,7 +483,7 @@ export default function Configuracoes() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="perfil">
-                  <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     <span>Perfil e Clínica</span>
                   </div>
@@ -499,6 +500,12 @@ export default function Configuracoes() {
                     <span>Procedimentos</span>
                   </div>
                 </SelectItem>
+                <SelectItem value="agendamento">
+                  <div className="flex items-center gap-2">
+                    <Link2 className="h-4 w-4" />
+                    <span>Agendamento Online</span>
+                  </div>
+                </SelectItem>
                 <SelectItem value="sistema">
                   <div className="flex items-center gap-2">
                     <Database className="h-4 w-4" />
@@ -509,7 +516,7 @@ export default function Configuracoes() {
             </Select>
           ) : (
             /* Tabs para Desktop */
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
               <TabsTrigger value="perfil" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">Perfil e Clínica</span>
@@ -523,6 +530,10 @@ export default function Configuracoes() {
                 <Stethoscope className="h-4 w-4" />
                 Procedimentos
               </TabsTrigger>
+              <TabsTrigger value="agendamento" className="flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                <span className="hidden lg:inline">Agendamento</span>
+              </TabsTrigger>
               <TabsTrigger value="sistema" className="flex items-center gap-2">
                 <Database className="h-4 w-4" />
                 Sistema
@@ -533,10 +544,10 @@ export default function Configuracoes() {
           {/* TAB: Perfil e Clínica */}
           <TabsContent value="perfil" className="space-y-6 mt-6">
             <div className="flex items-center gap-2 mb-6">
-              <User className="h-5 w-5 text-primary" />
+            <User className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold text-foreground">Perfil e Clínica</h2>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="rounded-xl bg-card border border-border p-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">Perfil</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -713,16 +724,16 @@ export default function Configuracoes() {
               <Button type="submit" className="gradient-primary w-full">Salvar alterações</Button>
             </form>
           </div>
-            </div>
+          </div>
           </TabsContent>
 
           {/* TAB: Horários e Notificações */}
           <TabsContent value="horarios" className="space-y-6 mt-6">
             <div className="flex items-center gap-2 mb-6">
-              <Clock className="h-5 w-5 text-primary" />
+            <Clock className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold text-foreground">Horários</h2>
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {/* Horários de Funcionamento */}
             <div className="rounded-xl bg-card border border-border p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -980,16 +991,16 @@ export default function Configuracoes() {
                 <Button type="submit" className="gradient-primary w-full">Salvar alterações</Button>
               </form>
             </div>
-            </div>
+          </div>
           </TabsContent>
 
           {/* TAB: Procedimentos */}
           <TabsContent value="procedimentos" className="space-y-6 mt-6">
             <div className="flex items-center gap-2 mb-6">
-              <Stethoscope className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">Procedimentos</h2>
-            </div>
-            <div className="rounded-xl bg-card border border-border p-6">
+            <Stethoscope className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">Procedimentos</h2>
+          </div>
+          <div className="rounded-xl bg-card border border-border p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Stethoscope className="h-5 w-5 text-primary" />
               Gerenciar Procedimentos
@@ -1181,16 +1192,25 @@ export default function Configuracoes() {
               </div>
             )}
           </div>
+          </div>
+          </TabsContent>
+
+          {/* TAB: Agendamento Online */}
+          <TabsContent value="agendamento" className="space-y-6 mt-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Link2 className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Agendamento Online</h2>
             </div>
+            <BookingSettingsTab />
           </TabsContent>
 
           {/* TAB: Sistema */}
           <TabsContent value="sistema" className="space-y-6 mt-6">
             <div className="flex items-center gap-2 mb-6">
-              <Database className="h-5 w-5 text-primary" />
+            <Database className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold text-foreground">Sistema</h2>
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Modelos de Anamnese - NOVO */}
             <div className="rounded-xl bg-card border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -1258,7 +1278,7 @@ export default function Configuracoes() {
                   requiredPlan="professional"
                 />
               ) : (
-                <div className="space-y-4">
+              <div className="space-y-4">
                 {/* Exportar Backup */}
                 <div className="rounded-lg bg-muted/50 border border-border p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
@@ -1358,7 +1378,7 @@ export default function Configuracoes() {
               </div>
               )}
             </div>
-            </div>
+          </div>
           </TabsContent>
         </Tabs>
       </div>

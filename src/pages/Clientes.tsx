@@ -102,8 +102,8 @@ export default function Clientes() {
     // Aplicar busca
     if (search) {
       filtered = filtered.filter(c => 
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.phone?.includes(search) ||
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.phone?.includes(search) ||
         c.whatsapp?.includes(search) ||
         c.email?.toLowerCase().includes(search.toLowerCase())
       );
@@ -357,8 +357,8 @@ export default function Clientes() {
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar cliente..." 
+            <Input 
+              placeholder="Buscar cliente..." 
             value={search} 
             onChange={e => setSearch(e.target.value)} 
             className="pl-10" 
@@ -571,8 +571,8 @@ export default function Clientes() {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </div>
-                          
+            </div>
+
                           <div className="flex flex-wrap gap-1.5">
                             {client.phone && (
                               <Button 
@@ -620,22 +620,57 @@ export default function Clientes() {
             isMobile && "grid-cols-1"
           )}>
           {filteredClients?.map(client => (
-            <div key={client.id} className="p-4 rounded-xl bg-card border border-border hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+            <div 
+              key={client.id} 
+              className={cn(
+                "rounded-xl bg-card border border-border hover:shadow-lg transition-shadow",
+                clientLayout === 'grid-6' ? "p-3" : "p-4"
+              )}
+            >
+              <div className={cn(
+                "flex items-start justify-between",
+                clientLayout === 'grid-6' && "mb-2"
+              )}>
+                <div className={cn(
+                  "flex items-center min-w-0",
+                  clientLayout === 'grid-6' ? "gap-2" : "gap-3"
+                )}>
                   <ClientAvatar 
                     avatarUrl={client.avatar_url}
                     name={client.name}
-                    size="md"
+                    size={clientLayout === 'grid-6' ? "sm" : "md"}
                   />
-                  <div>
-                    <h3 className="font-semibold text-foreground">{client.name}
+                  <div className="min-w-0 flex-1">
+                    <h3 className={cn(
+                      "font-semibold text-foreground truncate",
+                      clientLayout === 'grid-6' ? "text-sm" : "text-base"
+                    )}>
+                      {client.name}
                     </h3>
-                    {client.whatsapp && <p className="text-sm text-muted-foreground">{formatPhone(client.whatsapp)}</p>}</div>
+                    {client.whatsapp && (
+                      <p className={cn(
+                        "text-muted-foreground truncate",
+                        clientLayout === 'grid-6' ? "text-xs" : "text-sm"
+                      )}>
+                        {formatPhone(client.whatsapp)}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="cursor-pointer"><MoreVertical className="h-4 w-4" /></Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={cn(
+                        "cursor-pointer flex-shrink-0",
+                        clientLayout === 'grid-6' ? "h-7 w-7" : "h-8 w-8"
+                      )}
+                    >
+                      <MoreVertical className={cn(
+                        clientLayout === 'grid-6' ? "h-3.5 w-3.5" : "h-4 w-4"
+                      )} />
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem 
@@ -646,35 +681,57 @@ export default function Clientes() {
                       Detalhes
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                    onClick={() => setClientToDelete({ id: client.id, name: client.name })} 
-                    className="text-destructive cursor-pointer">
+                      onClick={() => setClientToDelete({ id: client.id, name: client.name })} 
+                      className="text-destructive cursor-pointer"
+                    >
                       <Trash className="h-4 w-4 mr-2" />
                       Excluir
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div className="flex gap-2 mt-4">
-                {client.phone && 
-                <Button variant="outline" size="sm" onClick={() => window.open(`tel:${client.phone}`)}>
-                  <Phone className="h-4 w-4 mr-1" />Ligar
-                </Button>}
-                {client.whatsapp && 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    const message = `Olá ${client.name}! 👋\n\nComo posso ajudar você hoje?`;
-                    window.open(generateWhatsAppLink(client.whatsapp!, message), '_blank');
-                  }}
-                  className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 border-green-300 dark:border-green-700"
-                >
-                  <MessageCircle className="h-4 w-4 mr-1" />WhatsApp
-                </Button>}
+              <div className={cn(
+                "flex gap-1.5",
+                clientLayout === 'grid-6' ? "mt-2 flex-col" : "mt-4 flex-row gap-2"
+              )}>
+                {client.phone && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => window.open(`tel:${client.phone}`)}
+                    className={cn(
+                      clientLayout === 'grid-6' && "text-xs h-7 w-full justify-center"
+                    )}
+                  >
+                    <Phone className={cn(
+                      clientLayout === 'grid-6' ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-1"
+                    )} />
+                    Ligar
+                  </Button>
+                )}
+                {client.whatsapp && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      const message = `Olá ${client.name}! 👋\n\nComo posso ajudar você hoje?`;
+                      window.open(generateWhatsAppLink(client.whatsapp!, message), '_blank');
+                    }}
+                    className={cn(
+                      "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 border-green-300 dark:border-green-700",
+                      clientLayout === 'grid-6' && "text-xs h-7 w-full justify-center"
+                    )}
+                  >
+                    <MessageCircle className={cn(
+                      clientLayout === 'grid-6' ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-1"
+                    )} />
+                    WhatsApp
+                  </Button>
+                )}
               </div>
             </div>
           ))}
-          </div>
+        </div>
         )}
 
         {filteredClients?.length === 0 && (

@@ -14,3 +14,10 @@ COMMENT ON COLUMN profiles.onboarding_completed IS 'Indica se o usuário complet
 
 
 
+
+
+
+
+
+
+

@@ -895,28 +895,28 @@ export default function ClienteDetalhes() {
                         <span className="sm:hidden">PDF</span>
                       </Button>
                     )}
-                    <Button 
-                      variant={hasAnamnesis ? "outline" : "default"}
-                      size="sm"
-                      onClick={hasAnamnesis ? handleEditAnamnesis : handleCreateAnamnesis}
-                      className={cn(
-                        hasAnamnesis ? "" : "gradient-primary",
+                  <Button 
+                    variant={hasAnamnesis ? "outline" : "default"}
+                    size="sm"
+                    onClick={hasAnamnesis ? handleEditAnamnesis : handleCreateAnamnesis}
+                    className={cn(
+                      hasAnamnesis ? "" : "gradient-primary",
                         "flex-1 sm:flex-none"
-                      )}
-                    >
-                      {hasAnamnesis ? (
-                        <>
-                          <Edit2 className="h-4 w-4 mr-2" />
+                    )}
+                  >
+                    {hasAnamnesis ? (
+                      <>
+                        <Edit2 className="h-4 w-4 mr-2" />
                           <span className="hidden sm:inline">Editar anamnese</span>
                           <span className="sm:hidden">Editar</span>
-                        </>
-                      ) : (
-                        <>
-                          <Edit2 className="h-4 w-4 mr-2" />
-                          Criar anamnese
-                        </>
-                      )}
-                    </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Criar anamnese
+                      </>
+                    )}
+                  </Button>
                   </div>
                 )}
               </div>
@@ -928,11 +928,11 @@ export default function ClienteDetalhes() {
               </div>
             ) : (
               <>
-                {isEditingAnamnesis ? (
+                  {isEditingAnamnesis ? (
                   <>
                     {/* Seletor de Template */}
                     {(!selectedTemplateId || userTemplates.length > 1) && (
-                      <div className="rounded-xl bg-card border border-border p-6">
+                <div className="rounded-xl bg-card border border-border p-6">
                         <h3 className="text-lg font-semibold text-foreground mb-4">Selecionar Modelo de Anamnese</h3>
                         <Select
                           value={selectedTemplateId || ''}
@@ -956,9 +956,9 @@ export default function ClienteDetalhes() {
                             <a href="/modelos-anamnese" className="text-primary hover:underline">
                               Criar primeiro modelo
                             </a>
-                          </p>
-                        )}
-                      </div>
+                        </p>
+                      )}
+                    </div>
                     )}
 
                     {/* Formulário Dinâmico */}
@@ -1001,7 +1001,7 @@ export default function ClienteDetalhes() {
                                 return (
                                   <div key={question.id} className="pt-4 pb-2 border-b-2 border-primary/20">
                                     <h4 className="text-xl font-semibold text-foreground">{question.question_text}</h4>
-                                  </div>
+                    </div>
                                 );
                               }
                               
@@ -1016,24 +1016,24 @@ export default function ClienteDetalhes() {
                                           ? `${answer.answer}${answer.details ? ` - ${answer.details}` : ''}`
                                           : answer)
                                       : 'Não informado'}
-                                  </p>
-                                </div>
+                        </p>
+                    </div>
                               );
                             })}
-                        </div>
-                      </div>
+                  </div>
+                </div>
                     ) : (
                       <div className="rounded-xl bg-card border border-border p-8 text-center">
                         <p className="text-muted-foreground">
                           Nenhuma anamnese preenchida ainda.
                         </p>
-                      </div>
+                  </div>
                     )}
                   </>
                 )}
               </>
-            )}
-            </>
+                )}
+              </>
             )}
           </TabsContent>
 

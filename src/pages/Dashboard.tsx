@@ -373,17 +373,17 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
-                <div className={`grid grid-cols-1 ${getGridCols()} gap-4 auto-rows-fr`}>
+              <div className={`grid grid-cols-1 ${getGridCols()} gap-4 auto-rows-fr`}>
                   {todayAppointments?.slice(0, 5).map((appointment) => (
-                    <div key={appointment.id} className="min-w-0 h-full flex">
-                      <AppointmentCard
-                        appointment={appointment}
-                        onStatusChange={handleStatusChange}
-                        onPaymentChange={handlePaymentChange}
-                      />
-                    </div>
-                  ))}
-                </div>
+                  <div key={appointment.id} className="min-w-0 h-full flex">
+                    <AppointmentCard
+                      appointment={appointment}
+                      onStatusChange={handleStatusChange}
+                      onPaymentChange={handlePaymentChange}
+                    />
+                  </div>
+                ))}
+              </div>
                 
                 {todayAppointments && todayAppointments.length > 5 && (
                   <div className="mt-4 p-4 rounded-xl bg-muted/50 border border-border flex flex-col sm:flex-row items-center justify-between gap-3">

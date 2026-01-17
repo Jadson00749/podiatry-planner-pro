@@ -33,3 +33,9 @@ COMMENT ON FUNCTION public.initialize_trial() IS
 'Inicializa trial de 15 dias APENAS para novos usuários (INSERT).
 Em UPDATEs, respeita o valor de trial_ends_at definido manualmente.';
 
+
+
+
+
+
+

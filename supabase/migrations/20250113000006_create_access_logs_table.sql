@@ -88,3 +88,9 @@ GRANT EXECUTE ON FUNCTION public.log_user_access TO authenticated;
 
 
 
+
+
+
+
+
+

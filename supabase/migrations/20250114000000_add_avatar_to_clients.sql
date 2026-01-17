@@ -7,3 +7,9 @@ COMMENT ON COLUMN public.clients.avatar_url IS 'URL da foto do cliente armazenad
 
 
 
+
+
+
+
+
+

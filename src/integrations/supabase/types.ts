@@ -87,9 +87,11 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          avatar_url: string | null
           created_at: string
           email: string | null
           id: string
+          linked_user_id: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -99,9 +101,11 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          linked_user_id?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -111,9 +115,11 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          linked_user_id?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
@@ -172,11 +178,15 @@ export type Database = {
       profiles: {
         Row: {
           appointment_duration: number | null
+          booking_code: string | null
+          booking_enabled: boolean | null
+          booking_settings: Json | null
           clinic_name: string | null
           created_at: string
           full_name: string
           id: string
           phone: string | null
+          role: string | null
           updated_at: string
           user_id: string
           working_hours_end: string | null
@@ -184,11 +194,15 @@ export type Database = {
         }
         Insert: {
           appointment_duration?: number | null
+          booking_code?: string | null
+          booking_enabled?: boolean | null
+          booking_settings?: Json | null
           clinic_name?: string | null
           created_at?: string
           full_name: string
           id?: string
           phone?: string | null
+          role?: string | null
           updated_at?: string
           user_id: string
           working_hours_end?: string | null
@@ -196,11 +210,15 @@ export type Database = {
         }
         Update: {
           appointment_duration?: number | null
+          booking_code?: string | null
+          booking_enabled?: boolean | null
+          booking_settings?: Json | null
           clinic_name?: string | null
           created_at?: string
           full_name?: string
           id?: string
           phone?: string | null
+          role?: string | null
           updated_at?: string
           user_id?: string
           working_hours_end?: string | null

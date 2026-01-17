@@ -20,6 +20,7 @@ import ModelosAnamnese from "./pages/ModelosAnamnese";
 import TemplateEditor from "./pages/TemplateEditor";
 import Notificacoes from "./pages/Notificacoes";
 import Planos from "./pages/Planos";
+import AgendamentoCliente from "./pages/AgendamentoCliente";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
+                <Route path="/agendar/:codigo" element={<AgendamentoCliente />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
                 <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />

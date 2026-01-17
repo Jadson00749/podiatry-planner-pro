@@ -91,13 +91,25 @@ export default function Auth() {
           const now = Date.now();
           
           if (now < expiresAt) {
-            // Token válido, redirecionar para dashboard
-            navigate('/dashboard', { replace: true });
+            // Token válido, redirecionar
+            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+              sessionStorage.removeItem('redirectAfterLogin');
+              navigate(redirectPath, { replace: true });
+            } else {
+              navigate('/dashboard', { replace: true });
+            }
             return;
           }
         } else {
           // Sem expiração definida, redirecionar
-          navigate('/dashboard', { replace: true });
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          if (redirectPath) {
+            sessionStorage.removeItem('redirectAfterLogin');
+            navigate(redirectPath, { replace: true });
+          } else {
+            navigate('/dashboard', { replace: true });
+          }
           return;
         }
       }
@@ -386,7 +398,15 @@ export default function Auth() {
     setAttemptInfo(null);
     setShowCaptcha(false);
     setCaptchaVerified(false);
-    navigate('/dashboard');
+    
+    // Verificar se tem redirect salvo (para voltar à página de agendamento)
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+    if (redirectPath) {
+      sessionStorage.removeItem('redirectAfterLogin');
+      navigate(redirectPath);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const handleSignup = async (data: SignupFormData) => {
@@ -479,10 +499,9 @@ export default function Auth() {
 
       {/* Right Side - Form */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 sm:px-8 sm:py-12 lg:p-12 bg-background relative">
-        {/* Header - Logo e Tema alinhados */}
-        <div className="absolute top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-6 flex items-center justify-between">
-          {/* Mobile Logo - Compacto */}
-          <div className="lg:hidden flex items-center gap-2">
+        {/* Mobile Logo - Esquerda */}
+        <div className="absolute top-4 left-4 sm:top-6 sm:left-6 lg:hidden">
+          <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
               <CalendarCheck className="w-6 h-6 text-primary-foreground" />
             </div>
@@ -491,8 +510,10 @@ export default function Auth() {
               <p className="text-xs text-muted-foreground">Gestão Clínica</p>
             </div>
           </div>
-          
-          {/* Theme Toggle */}
+        </div>
+
+        {/* Theme Toggle - Sempre à direita */}
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-6 lg:right-6 flex justify-end">
           <ThemeToggle />
         </div>
 
@@ -906,3 +927,5 @@ export default function Auth() {
     </div>
   );
 }
+
+
